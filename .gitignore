@@ -1,0 +1,13 @@
+# SSL Certificates
+*.pem
+*.crt
+*.key
+*.png
+*.jpeg
+*.jpg
+*.md
+*.docx
+*.bat
+*.html 
+*.pdf
+.env

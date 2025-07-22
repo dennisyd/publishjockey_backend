@@ -1,0 +1,12 @@
+{
+  "name": "splitdoctor",
+  "version": "1.0.0",
+  "description": "Document splitting utility for docx files",
+  "main": "splitDoctorService.js",
+  "dependencies": {
+    "docx4js": "^3.2.20",
+    "docx": "^8.2.2",
+    "turndown": "^7.1.2",
+    "archiver": "^5.3.1"
+  }
+} 

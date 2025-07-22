@@ -1,0 +1,33 @@
+const mongoose = require('mongoose');
+
+const sessionSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  refreshToken: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  deviceInfo: {
+    userAgent: String,
+    ipAddress: String
+  },
+  isValid: {
+    type: Boolean,
+    default: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    expires: 7 * 24 * 60 * 60 // Automatically delete after 7 days
+  }
+});
+
+// Index for faster queries
+sessionSchema.index({ userId: 1, isValid: 1 });
+sessionSchema.index({ refreshToken: 1 }, { unique: true });
+
+module.exports = mongoose.model('Session', sessionSchema); 

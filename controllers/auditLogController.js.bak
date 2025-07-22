@@ -1,0 +1,118 @@
+const AuditLogService = require('../services/auditLogService');
+
+/**
+ * Get audit logs with filtering and pagination
+ */
+const getAuditLogs = async (req, res) => {
+  try {
+    const {
+      userId,
+      action,
+      status,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 50
+    } = req.query;
+
+    const result = await AuditLogService.getLogs({
+      userId,
+      action,
+      status,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      page: parseInt(page),
+      limit: parseInt(limit)
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('Failed to fetch audit logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch audit logs',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get audit logs for current user
+ */
+const getUserAuditLogs = async (req, res) => {
+  try {
+    const {
+      action,
+      status,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 50
+    } = req.query;
+
+    const result = await AuditLogService.getUserLogs(req.user.userId, {
+      action,
+      status,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      page: parseInt(page),
+      limit: parseInt(limit)
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('Failed to fetch user audit logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user audit logs',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get admin audit logs
+ */
+const getAdminAuditLogs = async (req, res) => {
+  try {
+    const {
+      status,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 50
+    } = req.query;
+
+    const result = await AuditLogService.getAdminLogs({
+      status,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      page: parseInt(page),
+      limit: parseInt(limit)
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('Failed to fetch admin audit logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch admin audit logs',
+      error: error.message
+    });
+  }
+};
+
+module.exports = {
+  getAuditLogs,
+  getUserAuditLogs,
+  getAdminAuditLogs
+}; 

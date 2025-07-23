@@ -37,8 +37,14 @@ app.use((req, res, next) => {
 });
 
 // Basic middleware
+const allowedOrigins = [
+  'https://publishjockey-frontend.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:3001'
+];
 app.use(cors({
-  origin: config.cors.origin,
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Stripe-Signature']

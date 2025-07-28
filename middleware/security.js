@@ -1,6 +1,10 @@
 const helmet = require('helmet');
 const cors = require('cors');
 const config = require('../config/config');
+const rateLimiting = require('./rateLimiting');
+const { sanitizeInput } = require('./validation');
+// const { htmlSanitizerMiddleware } = require('./htmlSanitizer');
+const { simpleSanitizerMiddleware } = require('./simpleSanitizer');
 
 // CORS configuration
 const corsOptions = {
@@ -14,6 +18,15 @@ const corsOptions = {
 
 // Security middleware configuration
 const securityMiddleware = [
+  // General rate limiting (applied to all routes)
+  rateLimiting.general,
+  
+  // Input sanitization (protect against NoSQL injection)
+  sanitizeInput,
+  
+  // Simple XSS protection (safer than DOM-based sanitization)
+  simpleSanitizerMiddleware,
+  
   // Basic security headers
   helmet(),
   
@@ -56,4 +69,7 @@ const securityMiddleware = [
   cors(corsOptions)
 ];
 
-module.exports = securityMiddleware; 
+module.exports = {
+  securityMiddleware,
+  rateLimiting
+}; 

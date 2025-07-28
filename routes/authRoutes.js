@@ -1,12 +1,13 @@
 const express = require('express');
 const { register, login, verifyEmail, forgotPassword, resetPassword, getMe } = require('../controllers/authController');
 const { verifyTokenStrict } = require('../middleware/auth');
+const { validateUserRegistration, validateUserLogin } = require('../middleware/validation');
 
 const router = express.Router();
 
 // Public routes
-router.post('/register', register);
-router.post('/login', login);
+router.post('/register', validateUserRegistration, register);
+router.post('/login', validateUserLogin, login);
 router.post('/verify-email', verifyEmail);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);

@@ -82,15 +82,12 @@ app.get('/public-files/:dir/:file', (req, res) => {
   }
 });
 
-// Temporarily disable security middleware
-// const securityMiddleware = require('./middleware/security');
-// app.use(securityMiddleware);
+// Apply security middleware (rate limiting, input sanitization, security headers)
+const { securityMiddleware } = require('./middleware/security');
+app.use(securityMiddleware);
+console.log('🛡️ Security middleware enabled');
 
 // Routes
-app.use('/auth', authRoutes);
-app.use('/admin', require('./routes/adminRoutes'));
-app.use('/books', require('./routes/bookRoutes'));
-app.use('/projects', require('./routes/projectRoutes'));
 app.use('/api', splitDoctorRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/auth', authRoutes);
@@ -138,6 +135,8 @@ app.get('/test', (req, res) => {
     }
   });
 });
+
+
 
 // Error handling middleware
 app.use(notFound);

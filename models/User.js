@@ -97,7 +97,20 @@ const UserSchema = new mongoose.Schema({
         default: Date.now
       }
     }
-  ]
+  ],
+  // Image tracking fields
+  imagesUsed: {
+    type: Number,
+    default: 0
+  },
+  imagesAllowed: {
+    type: Number,
+    default: 10 // Default for free plan
+  },
+  additionalImageSlots: {
+    type: Number,
+    default: 0
+  }
 });
 
 // Hash password before saving
@@ -145,6 +158,16 @@ UserSchema.methods.updateBooksAllowance = function() {
     this.booksRemaining = this.booksAllowed;
   }
   // Otherwise keep the current remaining count
+};
+
+// Method to get total image limit
+UserSchema.methods.getTotalImageLimit = function() {
+  return this.imagesAllowed + this.additionalImageSlots;
+};
+
+// Method to check if user can upload more images
+UserSchema.methods.canUploadImages = function() {
+  return this.imagesUsed < this.getTotalImageLimit();
 };
 
 // Pre-save hook to update books allowance when subscription changes

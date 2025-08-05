@@ -16,6 +16,7 @@
     "@babel/parser": "^7.27.2",
     "archiver": "^7.0.1",
     "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "docx": "^8.5.0",

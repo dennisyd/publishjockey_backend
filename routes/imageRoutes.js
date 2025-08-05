@@ -113,9 +113,10 @@ router.post('/upload-url', verifyTokenStrict, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    if (!user.canUploadImages()) {
+    const totalLimit = user.getTotalImageLimit();
+    if (user.imagesUsed >= totalLimit) {
       return res.status(403).json({ 
-        error: 'Image limit exceeded. Please upgrade your plan or purchase additional image slots.' 
+        error: `You have reached your image limit (${user.imagesUsed}/${totalLimit}). Please delete some images or purchase additional slots to continue.` 
       });
     }
 
@@ -191,9 +192,10 @@ router.post('/', verifyTokenStrict, upload.single('image'), async (req, res) => 
       return res.status(404).json({ error: 'User not found' });
     }
 
-    if (!user.canUploadImages()) {
+    const totalLimit = user.getTotalImageLimit();
+    if (user.imagesUsed >= totalLimit) {
       return res.status(403).json({ 
-        error: 'Image limit exceeded. Please upgrade your plan or purchase additional image slots.' 
+        error: `You have reached your image limit (${user.imagesUsed}/${totalLimit}). Please delete some images or purchase additional slots to continue.` 
       });
     }
 

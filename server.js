@@ -15,6 +15,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const userRoutes = require('./routes/userRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
+const imageRoutes = require('./routes/imageRoutes');
 
 // Create Express app
 const app = express();
@@ -95,6 +96,7 @@ app.use('/api/admin', verifyTokenStrict, requireAdmin, adminRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/stripe', stripeRoutes);
+app.use('/api/images', imageRoutes);
 
 // Add a specific route for file downloads to make absolutely sure it's registered
 app.get('/api/download', verifyToken, (req, res) => {

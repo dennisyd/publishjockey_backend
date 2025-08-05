@@ -1,6 +1,8 @@
 const Project = require('../models/Project');
+const User = require('../models/User');
 const mongoose = require('mongoose');
 const config = require('../config/config');
+const { updateUserImageCount } = require('../utils/imageScanner');
 
 /**
  * Get all projects
@@ -231,13 +233,20 @@ exports.updateProject = async (req, res) => {
       }
     }
     
-    // Update the project
+        // Update the project
     project = await Project.findByIdAndUpdate(
       req.params.id, 
       req.body, 
       { new: true, runValidators: true }
     );
-    
+
+    // Update user's image count based on actual usage (async, don't wait)
+    if (req.body.content && req.user && req.user.userId) {
+      updateUserImageCount(req.user.userId, User, Project).catch(error => {
+        console.error('Error updating user image count after project save:', error);
+      });
+    }
+
     // Verify the structure was saved correctly if it was part of the update
     if (req.body.structure && project.structure) {
       console.log('Structure saved successfully:', {

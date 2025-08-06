@@ -34,7 +34,11 @@ const createTransporter = () => {
     pool: true,
     maxConnections: 5,
     maxMessages: 100,
-    rateLimit: 14 // Limit to 14 emails per second
+    rateLimit: 14, // Limit to 14 emails per second
+    // Handle certificate issues
+    tls: {
+      rejectUnauthorized: false
+    }
   });
 };
 

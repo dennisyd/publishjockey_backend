@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const { generateRandomToken } = require('../utils/tokenUtils');
-const { sendPasswordResetEmail, sendNotificationEmail } = require('../utils/emailUtils');
+const { sendPasswordResetEmail, sendNotificationEmail, sendPasswordChangeEmail } = require('../utils/emailUtils');
 
 // Get all users with pagination, sorting and filtering
 const getAllUsers = async (req, res) => {

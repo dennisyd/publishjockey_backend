@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const { generateJWT, generateRandomToken } = require('../utils/tokenUtils');
-const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/emailUtils');
+const { sendVerificationEmail, sendPasswordResetEmail, sendPasswordChangeEmail } = require('../utils/emailUtils');
 const crypto = require('crypto');
 
 // Register user
@@ -34,16 +34,38 @@ const register = async (req, res) => {
     });
     
     // Send verification email
-    await sendVerificationEmail({
-      name: user.name,
-      email: user.email,
-      verificationToken
-    });
-    
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully. Please check your email for verification.'
-    });
+    try {
+      await sendVerificationEmail({
+        name: user.name,
+        email: user.email,
+        verificationToken
+      });
+      
+      res.status(201).json({
+        success: true,
+        message: 'User registered successfully. Please check your email for verification.'
+      });
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      
+      // In development, still allow registration even if email fails
+      if (process.env.NODE_ENV === 'development') {
+        res.status(201).json({
+          success: true,
+          message: 'User registered successfully. Email verification failed - check console for verification URL.',
+          verificationUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
+        });
+      } else {
+        // In production, fail the registration if email can't be sent
+        // Delete the user since we can't send verification email
+        await User.findByIdAndDelete(user._id);
+        
+        res.status(500).json({
+          success: false,
+          message: 'Registration failed - unable to send verification email. Please try again later.'
+        });
+      }
+    }
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ 
@@ -280,6 +302,22 @@ const resetPassword = async (req, res) => {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
+    
+    // Send password change confirmation email
+    try {
+      await sendPasswordChangeEmail({
+        name: user.name,
+        email: user.email,
+        changeDetails: {
+          timestamp: new Date(),
+          ipAddress: req.ip || req.connection.remoteAddress,
+          userAgent: req.get('User-Agent')
+        }
+      });
+    } catch (emailError) {
+      console.error('Failed to send password change confirmation email:', emailError);
+      // Don't fail the password reset if email fails
+    }
     
     res.status(200).json({
       success: true,

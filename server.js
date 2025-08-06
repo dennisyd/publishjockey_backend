@@ -27,13 +27,7 @@ app.use((req, res, next) => {
 });
 
 // Apply JSON parsing middleware for all routes except Stripe webhook
-app.use((req, res, next) => {
-  if (req.originalUrl !== '/api/stripe/webhook') {
-    express.json({ limit: '50mb' })(req, res, next);
-  } else {
-    next();
-  }
-});
+app.use(express.json({ limit: '50mb' }));
 
 // Basic middleware
 const allowedOrigins = [
@@ -145,6 +139,16 @@ app.get('/api/auth/test', (req, res) => {
     message: 'Auth routes are working',
     path: req.path,
     originalUrl: req.originalUrl
+  });
+});
+
+// Test login route specifically
+app.get('/api/auth/login', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'Login route is accessible',
+    method: req.method,
+    path: req.path
   });
 });
 

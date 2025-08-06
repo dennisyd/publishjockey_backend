@@ -6,7 +6,7 @@ const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   
   // Frontend URL Configuration
-  frontendUrl: process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://publishjockey.com' : 'http://localhost:3000'),
+  frontendUrl: process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://publishjockey-frontend.vercel.app' : 'http://localhost:3000'),
   
   // JWT Configuration
   jwt: {
@@ -19,7 +19,7 @@ const config = {
   // CORS Configuration
   cors: {
     origin: process.env.NODE_ENV === 'production' 
-      ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://publishjockey.com']
+      ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://publishjockey-frontend.vercel.app', 'https://publishjockey.com']
       : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:3001'],
     credentials: true
   },

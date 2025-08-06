@@ -26,14 +26,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// IMPORTANT: Special handling for Stripe webhook route - must come before body parsers
+// Apply JSON parsing middleware for all routes except Stripe webhook
 app.use((req, res, next) => {
-  if (req.originalUrl === '/api/stripe/webhook') {
-    // Use raw body for Stripe webhook validation
-    next();
-  } else {
-    // Use JSON parsing for other routes
+  if (req.originalUrl !== '/api/stripe/webhook') {
     express.json({ limit: '50mb' })(req, res, next);
+  } else {
+    next();
   }
 });
 
@@ -89,6 +87,7 @@ app.use(securityMiddleware);
 console.log('🛡️ Security middleware enabled');
 
 // Routes
+console.log('🔗 Registering routes...');
 app.use('/api', splitDoctorRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/auth', authRoutes);
@@ -97,6 +96,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/images', imageRoutes);
+console.log('✅ All routes registered');
 
 // Add a specific route for file downloads to make absolutely sure it's registered
 app.get('/api/download', verifyToken, (req, res) => {
@@ -135,6 +135,16 @@ app.get('/test', (req, res) => {
       hasRefreshSecret: !!config.jwt.refreshTokenSecret,
       hasMongoUri: !!config.db.uri
     }
+  });
+});
+
+// Test auth route to verify routing
+app.get('/api/auth/test', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'Auth routes are working',
+    path: req.path,
+    originalUrl: req.originalUrl
   });
 });
 

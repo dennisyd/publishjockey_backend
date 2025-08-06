@@ -166,7 +166,13 @@ const login = async (req, res) => {
     }
     
     // Compare password
+    console.log('Login attempt - comparing passwords for user:', email);
+    console.log('Input password length:', password.length);
+    console.log('Stored password hash length:', user.password.length);
+    console.log('Stored password starts with $2b$:', user.password.startsWith('$2b$'));
+    
     const isPasswordValid = await user.comparePassword(password);
+    console.log('Password comparison result:', isPasswordValid);
     
     if (!isPasswordValid) {
       console.log('Invalid password for user:', email);
@@ -277,6 +283,8 @@ const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
     
+    console.log('Reset password request received:', { token: token ? `${token.substring(0, 10)}...` : 'null', hasPassword: !!newPassword });
+    
     if (!token || !newPassword) {
       return res.status(400).json({ 
         success: false, 
@@ -290,6 +298,13 @@ const resetPassword = async (req, res) => {
       resetPasswordExpires: { $gt: Date.now() }
     });
     
+    console.log('User lookup result:', { 
+      found: !!user, 
+      tokenLength: token.length,
+      currentTime: new Date().toISOString(),
+      tokenExpires: user ? user.resetPasswordExpires : 'N/A'
+    });
+    
     if (!user) {
       return res.status(400).json({ 
         success: false, 
@@ -298,10 +313,13 @@ const resetPassword = async (req, res) => {
     }
     
     // Update password
+    console.log('Before password update - password length:', newPassword.length);
     user.password = newPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
+    console.log('After password save - password field length:', user.password.length);
+    console.log('Password field starts with $2b$ (bcrypt hash):', user.password.startsWith('$2b$'));
     
     // Send password change confirmation email
     try {

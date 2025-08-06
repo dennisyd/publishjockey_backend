@@ -170,6 +170,7 @@ const login = async (req, res) => {
     console.log('Input password length:', password.length);
     console.log('Stored password hash length:', user.password.length);
     console.log('Stored password starts with $2b$:', user.password.startsWith('$2b$'));
+    console.log('Stored password first 20 chars:', user.password.substring(0, 20));
     
     const isPasswordValid = await user.comparePassword(password);
     console.log('Password comparison result:', isPasswordValid);

@@ -3,22 +3,14 @@ const config = require('../config/config');
 
 // Create a transporter object using SMTP transport
 const createTransporter = () => {
-  // In development, if no email config is provided, create a test account
-  if (config.nodeEnv === 'development' && !config.email.host) {
-    console.log('[DEV] No email configuration found. Using test account for development.');
-    return nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: 'test@ethereal.email',
-        pass: 'test'
-      }
-    });
+  // Check if email configuration is available
+  if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
+    console.log('[DEV] No email configuration found. Email functionality will be disabled.');
+    return null;
   }
 
-  // Production email configuration
-  if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
+  // Production email configuration validation
+  if (config.nodeEnv === 'production' && (!config.email.host || !config.email.auth.user || !config.email.auth.pass)) {
     throw new Error('Email configuration is required in production. Please set EMAIL_HOST, EMAIL_USER, and EMAIL_PASS environment variables.');
   }
 
@@ -49,9 +41,9 @@ const transporter = createTransporter();
  * @param {Object} options - Options containing name, email, and verificationToken
  */
 const sendVerificationEmail = async ({ name, email, verificationToken }) => {
-  // Skip sending emails in development unless email config is set
-  if (config.nodeEnv === 'development' && !config.email.host) {
-    console.log(`[DEV] Verification email would be sent to ${email} with token: ${verificationToken}`);
+  // Check if email configuration is available
+  if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
+    console.log(`[DEV] No email configuration found. Verification email would be sent to ${email} with token: ${verificationToken}`);
     console.log(`[DEV] Verification URL: ${config.frontendUrl}/verify-email?token=${verificationToken}`);
     return;
   }
@@ -104,6 +96,10 @@ The PublishJockey Team
   };
   
   try {
+    if (!transporter) {
+      console.log('[DEV] No email transporter available. Skipping verification email send.');
+      return;
+    }
     const info = await transporter.sendMail(mailOptions);
     console.log(`Verification email sent to ${email}:`, info.messageId);
     return info;
@@ -118,9 +114,9 @@ The PublishJockey Team
  * @param {Object} options - Options containing name, email, and resetToken
  */
 const sendPasswordResetEmail = async ({ name, email, resetToken }) => {
-  // Skip sending emails in development unless email config is set
-  if (config.nodeEnv === 'development' && !config.email.host) {
-    console.log(`[DEV] Password reset email would be sent to ${email} with token: ${resetToken}`);
+  // Check if email configuration is available
+  if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
+    console.log(`[DEV] No email configuration found. Password reset email would be sent to ${email} with token: ${resetToken}`);
     return;
   }
 
@@ -150,6 +146,10 @@ const sendPasswordResetEmail = async ({ name, email, resetToken }) => {
   };
   
   try {
+    if (!transporter) {
+      console.log('[DEV] No email transporter available. Skipping password reset email send.');
+      return;
+    }
     const info = await transporter.sendMail(mailOptions);
     console.log('Password reset email sent:', info.messageId);
     return info;
@@ -164,9 +164,9 @@ const sendPasswordResetEmail = async ({ name, email, resetToken }) => {
  * @param {Object} options - Options containing name, email, and changeDetails
  */
 const sendPasswordChangeEmail = async ({ name, email, changeDetails = {} }) => {
-  // Skip sending emails in development unless email config is set
-  if (config.nodeEnv === 'development' && !config.email.host) {
-    console.log(`[DEV] Password change confirmation email would be sent to ${email}`);
+  // Check if email configuration is available
+  if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
+    console.log(`[DEV] No email configuration found. Password change confirmation email would be sent to ${email}`);
     console.log(`[DEV] Change details:`, changeDetails);
     return;
   }
@@ -206,6 +206,10 @@ const sendPasswordChangeEmail = async ({ name, email, changeDetails = {} }) => {
   };
   
   try {
+    if (!transporter) {
+      console.log('[DEV] No email transporter available. Skipping password change confirmation email send.');
+      return;
+    }
     const info = await transporter.sendMail(mailOptions);
     console.log('Password change confirmation email sent:', info.messageId);
     return info;
@@ -220,9 +224,9 @@ const sendPasswordChangeEmail = async ({ name, email, changeDetails = {} }) => {
  * @param {Object} options - Options containing name, email, subject and message
  */
 const sendNotificationEmail = async ({ name, email, subject, message }) => {
-  // Skip sending emails in development unless email config is set
-  if (config.nodeEnv === 'development' && !config.email.host) {
-    console.log(`[DEV] Notification email would be sent to ${email} with subject: ${subject}`);
+  // Check if email configuration is available
+  if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
+    console.log(`[DEV] No email configuration found. Notification email would be sent to ${email} with subject: ${subject}`);
     return;
   }
   
@@ -241,6 +245,10 @@ const sendNotificationEmail = async ({ name, email, subject, message }) => {
   };
   
   try {
+    if (!transporter) {
+      console.log('[DEV] No email transporter available. Skipping notification email send.');
+      return;
+    }
     const info = await transporter.sendMail(mailOptions);
     console.log('Notification email sent:', info.messageId);
     return info;

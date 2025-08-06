@@ -81,7 +81,10 @@ const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
     
+    console.log('Email verification attempt with token:', token ? `${token.substring(0, 10)}...` : 'null');
+    
     if (!token) {
+      console.log('No token provided for email verification');
       return res.status(400).json({ 
         success: false, 
         message: 'Invalid verification link' 
@@ -94,7 +97,15 @@ const verifyEmail = async (req, res) => {
       verificationTokenExpires: { $gt: Date.now() }
     });
     
+    console.log('User lookup for verification:', { 
+      found: !!user, 
+      tokenLength: token.length,
+      currentTime: new Date().toISOString(),
+      tokenExpires: user ? user.verificationTokenExpires : 'N/A'
+    });
+    
     if (!user) {
+      console.log('No user found with verification token');
       return res.status(400).json({ 
         success: false, 
         message: 'Invalid or expired verification token' 
@@ -102,10 +113,12 @@ const verifyEmail = async (req, res) => {
     }
     
     // Update user verification status
+    console.log('Updating user verification status for:', user.email);
     user.isVerified = true;
     user.verificationToken = undefined;
     user.verificationTokenExpires = undefined;
     await user.save();
+    console.log('User verification completed successfully for:', user.email);
     
     res.status(200).json({
       success: true,
@@ -315,7 +328,12 @@ const resetPassword = async (req, res) => {
     
     // Update password
     console.log('Before password update - password length:', newPassword.length);
-    user.password = newPassword;
+    
+    // Explicitly hash the password to ensure it's properly hashed
+    const bcrypt = require('bcryptjs');
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();

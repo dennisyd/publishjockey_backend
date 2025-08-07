@@ -118,6 +118,11 @@ UserSchema.pre('save', async function(next) {
   // Only hash the password if it's modified (or new)
   if (!this.isModified('password')) return next();
   
+  // Skip hashing if password is already hashed (from reset password)
+  if (this.password && (this.password.startsWith('$2a$') || this.password.startsWith('$2b$'))) {
+    return next();
+  }
+  
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -129,7 +134,20 @@ UserSchema.pre('save', async function(next) {
 
 // Method to compare password
 UserSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  try {
+    console.log('🔐 Password comparison debug:');
+    console.log('  - Candidate password length:', candidatePassword.length);
+    console.log('  - Stored hash length:', this.password.length);
+    console.log('  - Hash starts with:', this.password.substring(0, 7));
+    
+    const result = await bcrypt.compare(candidatePassword, this.password);
+    console.log('  - Comparison result:', result);
+    
+    return result;
+  } catch (error) {
+    console.error('Password comparison error:', error);
+    return false;
+  }
 };
 
 // Method to update books remaining after subscription update

@@ -332,13 +332,22 @@ const resetPassword = async (req, res) => {
     // Explicitly hash the password to ensure it's properly hashed
     const bcrypt = require('bcryptjs');
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
     
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-    await user.save();
-    console.log('After password save - password field length:', user.password.length);
-    console.log('Password field starts with $2b$ (bcrypt hash):', user.password.startsWith('$2b$'));
+    // Update user document directly to bypass pre-save hooks
+    await User.findByIdAndUpdate(user._id, {
+      password: hashedPassword,
+      resetPasswordToken: undefined,
+      resetPasswordExpires: undefined
+    });
+    
+    // Refresh user object to get updated data
+    const updatedUser = await User.findById(user._id).select('+password');
+    console.log('After password save - password field length:', updatedUser.password.length);
+    console.log('Password field starts with $2b$ (bcrypt hash):', updatedUser.password.startsWith('$2b$'));
+    
+    // Update the local user object for email sending
+    user.password = hashedPassword;
     
     // Send password change confirmation email
     try {

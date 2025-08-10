@@ -126,8 +126,7 @@ router.post('/upload-url', verifyTokenStrict, async (req, res) => {
 
     const signature = cloudinary.utils.api_sign_request({
       timestamp: timestamp,
-      public_id: publicId,
-      upload_preset: 'user_uploads'
+      public_id: publicId
     }, process.env.CLOUDINARY_API_SECRET);
 
     res.json({

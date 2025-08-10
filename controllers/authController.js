@@ -243,10 +243,29 @@ const login = async (req, res) => {
         );
       }
     } else {
-      // Update lastLogin timestamp without triggering validation on legacy fields
+      // Ensure imagesAllowed matches subscription mapping (self-healing for older accounts)
+      const expectedImageLimits = {
+        free: 2,
+        beta: 10,
+        single: 10,
+        single_promo: 12,
+        bundle10: 100,
+        bundle10_promo: 120,
+        bundle20: 200,
+        bundle20_promo: 220,
+        additional: 10
+      };
+      const expectedImages = expectedImageLimits[user.subscription] ?? user.imagesAllowed ?? 2;
+      const needsImageFix = typeof user.imagesAllowed === 'number' ? (user.imagesAllowed !== expectedImages) : true;
+
+      const $set = { lastLogin: new Date() };
+      if (needsImageFix) {
+        $set.imagesAllowed = expectedImages;
+      }
+
       await User.updateOne(
         { _id: user._id },
-        { $set: { lastLogin: new Date() } },
+        { $set },
         { runValidators: false }
       );
     }

@@ -180,10 +180,16 @@ const login = async (req, res) => {
     
     // Compare password
     console.log('Login attempt - comparing passwords for user:', email);
-    console.log('Input password length:', password.length);
-    console.log('Stored password hash length:', user.password.length);
-    console.log('Stored password starts with $2b$:', user.password.startsWith('$2b$'));
-    console.log('Stored password first 20 chars:', user.password.substring(0, 20));
+    console.log('Input password length:', password ? password.length : 'n/a');
+    const hasStoredHash = !!user.password;
+    console.log('Stored password present:', hasStoredHash);
+    if (hasStoredHash) {
+      console.log('Stored password hash length:', user.password.length);
+      console.log('Stored password starts with $2b$:', user.password.startsWith('$2b$'));
+      console.log('Stored password first 20 chars:', user.password.substring(0, 20));
+    } else {
+      console.warn('No stored password hash found on user document during login.');
+    }
     
     const isPasswordValid = await user.comparePassword(password);
     console.log('Password comparison result:', isPasswordValid);
@@ -196,9 +202,54 @@ const login = async (req, res) => {
       });
     }
     
-    // Update lastLogin timestamp
-    user.lastLogin = new Date();
-    await user.save();
+    // Normalize legacy subscriptions (e.g., prior 25-book/annual) to current plans
+    if (user.subscription === 'annual' || user.booksAllowed === 25) {
+      try {
+        const normalizedBooksAllowed = 20;
+        const normalizedImagesAllowed = 200; // bundle20 default
+        const normalizedSubscription = 'bundle20';
+        const normalizedBooksRemaining = Math.min(user.booksRemaining || normalizedBooksAllowed, normalizedBooksAllowed);
+        const threeYearsFromNow = new Date();
+        threeYearsFromNow.setFullYear(threeYearsFromNow.getFullYear() + 3);
+
+        await User.updateOne(
+          { _id: user._id },
+          {
+            $set: {
+              subscription: normalizedSubscription,
+              booksAllowed: normalizedBooksAllowed,
+              booksRemaining: normalizedBooksRemaining,
+              imagesAllowed: normalizedImagesAllowed,
+              subscriptionExpires: threeYearsFromNow,
+              lastLogin: new Date()
+            }
+          },
+          { runValidators: false }
+        );
+
+        // Reflect changes locally for response
+        user.subscription = normalizedSubscription;
+        user.booksAllowed = normalizedBooksAllowed;
+        user.booksRemaining = normalizedBooksRemaining;
+        user.imagesAllowed = normalizedImagesAllowed;
+        user.subscriptionExpires = threeYearsFromNow;
+      } catch (normErr) {
+        console.error('Legacy subscription normalization failed:', normErr);
+        // Still set lastLogin to avoid blocking login
+        await User.updateOne(
+          { _id: user._id },
+          { $set: { lastLogin: new Date() } },
+          { runValidators: false }
+        );
+      }
+    } else {
+      // Update lastLogin timestamp without triggering validation on legacy fields
+      await User.updateOne(
+        { _id: user._id },
+        { $set: { lastLogin: new Date() } },
+        { runValidators: false }
+      );
+    }
 
     // Generate token
     console.log('Generating JWT token for user:', user._id.toString());

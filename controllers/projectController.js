@@ -233,12 +233,29 @@ exports.updateProject = async (req, res) => {
       }
     }
     
-        // Update the project
+    // Detect title change before update for flagging
+    const originalTitle = project.title;
+    const willChangeTitle = typeof req.body.title === 'string' && req.body.title.trim() !== originalTitle;
+
+    // Update the project
     project = await Project.findByIdAndUpdate(
       req.params.id, 
       req.body, 
       { new: true, runValidators: true }
     );
+
+    // Title change monitoring (Single plans only; after 3 days; >25% delta)
+    try {
+      if (willChangeTitle && req.user && req.user.userId) {
+        const user = await User.findById(req.user.userId);
+        if (user) {
+          const titleChangeCtrl = require('./titleChangeController');
+          await titleChangeCtrl.flagIfNeeded({ user, project, newTitle: req.body.title });
+        }
+      }
+    } catch (e) {
+      console.error('Title change monitoring error:', e);
+    }
 
     // Update user's image count based on actual usage (async, don't wait)
     if (req.body.content && req.user && req.user.userId) {

@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const { stripe, SUBSCRIPTION_PLANS } = require('../config/stripe');
+const { isPromoActiveNow } = require('../config/launchOffer');
 const crypto = require('crypto');
 
 /**
@@ -21,6 +22,25 @@ const createCheckoutSession = async (req, res) => {
     }
 
     const plan = SUBSCRIPTION_PLANS[planId];
+
+    // Server-side promo enforcement
+    const isPromoPlan = ['single_promo', 'bundle10_promo', 'bundle20_promo'].includes(planId);
+    if (isPromoPlan) {
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      // Date-only gating
+      const promoActive = isPromoActiveNow();
+      if (!promoActive) {
+        return res.status(400).json({ success: false, message: 'Promotional plans are no longer available.' });
+      }
+      // One promo redemption per account per promo plan group
+      const groupKey = planId.startsWith('single') ? 'single' : planId.includes('bundle10') ? 'bundle10' : 'bundle20';
+      if (user.promoRedemptions && user.promoRedemptions[groupKey]) {
+        return res.status(400).json({ success: false, message: 'You have already redeemed this promotional plan.' });
+      }
+    }
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
@@ -114,15 +134,39 @@ const handleCheckoutSessionCompleted = async (session) => {
       return;
     }
 
-    // Update user subscription
-    const updatedUser = await User.findByIdAndUpdate(userId, {
-      subscription: planId,
-      booksAllowed: plan.booksAllowed,
-      booksRemaining: plan.booksAllowed,
-      subscriptionExpires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+    // Update user subscription (3-year validity for all plans)
+    let update = {
       lastPaymentDate: new Date(),
       paymentStatus: 'paid'
-    }, { new: true });
+    };
+
+    if (planId === 'images_addon_100') {
+      // Add-on: increment additional image slots
+      update = {
+        ...update,
+        $inc: { additionalImageSlots: 100 }
+      };
+    } else {
+      // Plan purchase
+      update = {
+        ...update,
+        subscription: planId,
+        booksAllowed: plan.booksAllowed,
+        booksRemaining: plan.booksAllowed,
+        subscriptionExpires: new Date(Date.now() + (3 * 365 * 24 * 60 * 60 * 1000))
+      };
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, update, { new: true });
+
+    // Mark promo redemption if applicable
+    const isPromo = ['single_promo', 'bundle10_promo', 'bundle20_promo'].includes(planId);
+    if (isPromo) {
+      const groupKey = planId.startsWith('single') ? 'single' : planId.includes('bundle10') ? 'bundle10' : 'bundle20';
+      await User.findByIdAndUpdate(userId, {
+        $set: { [`promoRedemptions.${groupKey}`]: true }
+      });
+    }
 
     console.log(`User ${userId} subscription updated to ${planId}`);
     console.log('Updated user:', {
@@ -171,7 +215,7 @@ const verifySession = async (req, res) => {
 
     // Get user details
     const user = await User.findById(req.user.userId);
-    const plan = SUBSCRIPTION_PLANS[session.metadata?.planId] || SUBSCRIPTION_PLANS.author;
+    const plan = SUBSCRIPTION_PLANS[session.metadata?.planId] || SUBSCRIPTION_PLANS.single;
 
     res.status(200).json({
       success: true,
@@ -189,7 +233,7 @@ const verifySession = async (req, res) => {
         subscription: user?.subscription || 'author',
         booksAllowed: user?.booksAllowed || 1,
         booksRemaining: user?.booksRemaining || 1,
-        subscriptionExpires: user?.subscriptionExpires || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+        subscriptionExpires: user?.subscriptionExpires || new Date(Date.now() + (3 * 365 * 24 * 60 * 60 * 1000))
       }
     });
   } catch (error) {
@@ -236,12 +280,12 @@ const manualVerifyPayment = async (req, res) => {
       });
     }
 
-    // Update user subscription
+    // Update user subscription (3-year validity)
     const updatedUser = await User.findByIdAndUpdate(req.user.userId, {
       subscription: planId,
       booksAllowed: plan.booksAllowed,
       booksRemaining: plan.booksAllowed,
-      subscriptionExpires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+      subscriptionExpires: new Date(Date.now() + (3 * 365 * 24 * 60 * 60 * 1000)), // 3 years
       lastPaymentDate: new Date(),
       paymentStatus: 'paid'
     }, { new: true });

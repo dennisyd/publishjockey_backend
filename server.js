@@ -12,6 +12,7 @@ const { verifyToken, requireAdmin, verifyTokenStrict } = require('./middleware/a
 const path = require('path');
 const fs = require('fs');
 const adminRoutes = require('./routes/adminRoutes');
+const titleChangeRoutes = require('./routes/titleChangeRoutes');
 const userRoutes = require('./routes/userRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
@@ -26,12 +27,21 @@ app.use((req, res, next) => {
   next();
 });
 
+// Ensure Stripe webhook receives raw body for signature verification
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
+
 // Apply JSON parsing middleware for all routes except Stripe webhook
-app.use(express.json({ limit: '50mb' }));
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/stripe/webhook') {
+    return next();
+  }
+  return express.json({ limit: '50mb' })(req, res, next);
+});
 
 // Basic middleware
 const allowedOrigins = [
   'https://publishjockey-frontend.vercel.app',
+  'https://publishjockey.com',
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:3001'
@@ -86,6 +96,7 @@ app.use('/api', splitDoctorRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', verifyTokenStrict, requireAdmin, adminRoutes);
+app.use('/api/admin/title-changes', titleChangeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/stripe', stripeRoutes);

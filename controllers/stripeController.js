@@ -1,5 +1,20 @@
 const User = require('../models/User');
 const { stripe, SUBSCRIPTION_PLANS } = require('../config/stripe');
+// Helper: determine imagesAllowed per plan for immediate consistency
+const getImagesAllowedForPlan = (planId) => {
+  const map = {
+    free: 2,
+    beta: 10,
+    single: 10,
+    single_promo: 12,
+    bundle10: 100,
+    bundle10_promo: 120,
+    bundle20: 200,
+    bundle20_promo: 220,
+    additional: 10,
+  };
+  return map[planId] ?? 2;
+};
 const { isPromoActiveNow } = require('../config/launchOffer');
 const crypto = require('crypto');
 
@@ -153,7 +168,8 @@ const handleCheckoutSessionCompleted = async (session) => {
         subscription: planId,
         booksAllowed: plan.booksAllowed,
         booksRemaining: plan.booksAllowed,
-        subscriptionExpires: new Date(Date.now() + (3 * 365 * 24 * 60 * 60 * 1000))
+        subscriptionExpires: new Date(Date.now() + (3 * 365 * 24 * 60 * 60 * 1000)),
+        imagesAllowed: getImagesAllowedForPlan(planId)
       };
     }
 

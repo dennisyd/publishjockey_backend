@@ -5,7 +5,7 @@ const cloudinary = require('cloudinary').v2;
 const { verifyToken, verifyTokenStrict } = require('../middleware/auth');
 const User = require('../models/User');
 const Project = require('../models/Project');
-const { scanUserImageUsage, updateUserImageCount } = require('../utils/imageScanner');
+const { scanUserImageUsage } = require('../utils/imageScanner');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -31,20 +31,25 @@ router.get('/usage', verifyTokenStrict, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Update user's image count based on actual usage
-    const actualUsage = await updateUserImageCount(req.user.userId, User, Project);
-    
-    // Refresh user data after update
-    const updatedUser = await User.findById(req.user.userId);
+    // Compute actual usage from content without overwriting upload-based counter
+    const actualUsage = await scanUserImageUsage(req.user.userId, Project);
+    const used = Math.max(user.imagesUsed || 0, actualUsage);
+
+    // Self-heal: persist the higher value so immediate uploads are reflected
+    if (used !== user.imagesUsed) {
+      await User.findByIdAndUpdate(req.user.userId, { imagesUsed: used });
+    }
+
+    const updatedUser = used === user.imagesUsed ? user : await User.findById(req.user.userId);
     const totalLimit = updatedUser.getTotalImageLimit();
 
     res.json({
-      used: actualUsage,
+      used,
       allowed: updatedUser.imagesAllowed,
       additional: updatedUser.additionalImageSlots,
       total: totalLimit,
-      remaining: totalLimit - actualUsage,
-      canUpload: actualUsage < totalLimit
+      remaining: totalLimit - used,
+      canUpload: used < totalLimit
     });
   } catch (error) {
     console.error('Error fetching image usage:', error);

@@ -1,7 +1,58 @@
 const Project = require('../models/Project');
 const User = require('../models/User');
 
-// Function to scan all projects for a user and count image occurrences
+// Helper: Count images inside arbitrary value (string | object | array)
+function countImagesInValue(value) {
+  let count = 0;
+
+  if (typeof value === 'string') {
+    const text = value;
+
+    // 1) Cloudinary URLs
+    const cloudinaryUrlRegex = /https?:\/\/res\.cloudinary\.com\/[\w\-]+\/[\w\-]+\/[\w\-]+\/[^\s)"'>]+/gi;
+    const cloudinaryMatches = text.match(cloudinaryUrlRegex);
+    if (cloudinaryMatches) count += cloudinaryMatches.length;
+
+    // 2) Markdown images: ![alt](url)
+    const markdownImgRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
+    let mdMatch;
+    while ((mdMatch = markdownImgRegex.exec(text)) !== null) {
+      count += 1;
+    }
+
+    // 3) HTML <img src="...">
+    const htmlImgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+    let htmlMatch;
+    while ((htmlMatch = htmlImgRegex.exec(text)) !== null) {
+      count += 1;
+    }
+
+    // 4) Placeholder images: {{IMAGE:name|width|height}}
+    const placeholderRegex = /\{\{IMAGE:[^|}]*?(?:\|[^|}]*){0,2}\}\}/g;
+    const placeholderMatches = text.match(placeholderRegex);
+    if (placeholderMatches) count += placeholderMatches.length;
+
+    return count;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      count += countImagesInValue(item);
+    }
+    return count;
+  }
+
+  if (value && typeof value === 'object') {
+    for (const key of Object.keys(value)) {
+      count += countImagesInValue(value[key]);
+    }
+    return count;
+  }
+
+  return 0;
+}
+
+// Function to scan all projects for a user and count image occurrences (robust)
 async function scanUserImageUsage(userId, ProjectModel) {
   try {
     // Find all projects owned by or shared with the user
@@ -14,21 +65,10 @@ async function scanUserImageUsage(userId, ProjectModel) {
     }).lean();
 
     let totalImageCount = 0;
-    const cloudinaryUrlRegex = /res\.cloudinary\.com/g;
 
     for (const project of projects) {
       if (project.content) {
-        // Check each section in the project content
-        for (const sectionKey in project.content) {
-          const content = project.content[sectionKey];
-          if (typeof content === 'string') {
-            // Count all occurrences of Cloudinary URLs
-            const matches = content.match(cloudinaryUrlRegex);
-            if (matches) {
-              totalImageCount += matches.length;
-            }
-          }
-        }
+        totalImageCount += countImagesInValue(project.content);
       }
     }
 

@@ -24,7 +24,7 @@ const upload = multer({
   }
 });
 
-// Get user's image usage statistics (now usage-based)
+// Get user's image usage statistics (ledger-based count of uploaded assets)
 router.get('/usage', verifyTokenStrict, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
@@ -32,25 +32,22 @@ router.get('/usage', verifyTokenStrict, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Compute actual usage from content without overwriting upload-based counter
-    const actualUsage = await scanUserImageUsage(req.user.userId, Project);
-    const used = Math.max(user.imagesUsed || 0, actualUsage);
+    // Ledger-based count of uploaded (and not deleted) assets
+    const ledgerCount = await ImageUpload.countDocuments({ userId: req.user.userId, deletedAt: { $exists: false } });
+    const totalLimit = user.getTotalImageLimit();
 
-    // Self-heal: persist the higher value so immediate uploads are reflected
-    if (used !== user.imagesUsed) {
-      await User.findByIdAndUpdate(req.user.userId, { imagesUsed: used });
+    // Persist canonical used value from ledger when different
+    if (ledgerCount !== (user.imagesUsed || 0)) {
+      await User.findByIdAndUpdate(req.user.userId, { imagesUsed: ledgerCount });
     }
 
-    const updatedUser = used === user.imagesUsed ? user : await User.findById(req.user.userId);
-    const totalLimit = updatedUser.getTotalImageLimit();
-
     res.json({
-      used,
-      allowed: updatedUser.imagesAllowed,
-      additional: updatedUser.additionalImageSlots,
+      used: ledgerCount,
+      allowed: user.imagesAllowed,
+      additional: user.additionalImageSlots,
       total: totalLimit,
-      remaining: totalLimit - used,
-      canUpload: used < totalLimit
+      remaining: totalLimit - ledgerCount,
+      canUpload: ledgerCount < totalLimit
     });
   } catch (error) {
     console.error('Error fetching image usage:', error);
@@ -66,14 +63,14 @@ router.get('/check-limit', verifyTokenStrict, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const canUpload = user.canUploadImages();
+    const ledgerCount = await ImageUpload.countDocuments({ userId: req.user.userId, deletedAt: { $exists: false } });
     const totalLimit = user.getTotalImageLimit();
 
     res.json({
-      canUpload,
-      used: user.imagesUsed,
+      canUpload: ledgerCount < totalLimit,
+      used: ledgerCount,
       total: totalLimit,
-      remaining: totalLimit - user.imagesUsed
+      remaining: totalLimit - ledgerCount
     });
   } catch (error) {
     console.error('Error checking image limit:', error);

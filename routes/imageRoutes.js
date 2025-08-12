@@ -164,6 +164,7 @@ router.post('/confirm-upload', verifyTokenStrict, async (req, res) => {
     }
 
     // Idempotent confirm: create a record if not exists, increment only once
+    console.log('[images] confirm-upload request', { userId: req.user.userId, public_id });
     const created = await ImageUpload.findOneAndUpdate(
       { userId: req.user.userId, publicId: public_id },
       { userId: req.user.userId, publicId: public_id, version },
@@ -171,6 +172,9 @@ router.post('/confirm-upload', verifyTokenStrict, async (req, res) => {
     );
     if (!created) {
       await User.findByIdAndUpdate(req.user.userId, { $inc: { imagesUsed: 1 } });
+      console.log('[images] imagesUsed incremented via confirm-upload', { userId: req.user.userId, public_id });
+    } else {
+      console.log('[images] confirm-upload duplicate ignored', { userId: req.user.userId, public_id });
     }
 
     // Construct the image URL
@@ -226,6 +230,7 @@ router.post('/', verifyTokenStrict, upload.single('image'), async (req, res) => 
     });
 
     // Direct upload increments once and records entry to prevent future duplicates
+    console.log('[images] direct upload', { userId: req.user.userId, public_id: uploadResult.public_id });
     const createdDirect = await ImageUpload.findOneAndUpdate(
       { userId: req.user.userId, publicId: uploadResult.public_id },
       { userId: req.user.userId, publicId: uploadResult.public_id, version: uploadResult.version },
@@ -233,6 +238,9 @@ router.post('/', verifyTokenStrict, upload.single('image'), async (req, res) => 
     );
     if (!createdDirect) {
       await User.findByIdAndUpdate(req.user.userId, { $inc: { imagesUsed: 1 } });
+      console.log('[images] imagesUsed incremented via direct upload', { userId: req.user.userId, public_id: uploadResult.public_id });
+    } else {
+      console.log('[images] direct upload duplicate ignored', { userId: req.user.userId, public_id: uploadResult.public_id });
     }
 
     res.json({
@@ -256,12 +264,16 @@ router.delete('/:id', verifyTokenStrict, async (req, res) => {
     await cloudinary.uploader.destroy(id);
     
     // Decrement only if we actually had a recorded upload
+    console.log('[images] delete request', { userId: req.user.userId, public_id: id });
     const removed = await ImageUpload.findOneAndUpdate(
       { userId: req.user.userId, publicId: id, deletedAt: { $exists: false } },
       { deletedAt: new Date() }
     );
     if (removed && !removed.deletedAt) {
       await User.findByIdAndUpdate(req.user.userId, { $inc: { imagesUsed: -1 } });
+      console.log('[images] imagesUsed decremented on delete', { userId: req.user.userId, public_id: id });
+    } else {
+      console.log('[images] delete duplicate ignored', { userId: req.user.userId, public_id: id });
     }
 
     res.json({ success: true, message: 'Image deleted successfully' });

@@ -6,6 +6,7 @@ const { verifyToken, verifyTokenStrict } = require('../middleware/auth');
 const User = require('../models/User');
 const Project = require('../models/Project');
 const { scanUserImageUsage } = require('../utils/imageScanner');
+const ImageUpload = require('../models/ImageUpload');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -162,10 +163,15 @@ router.post('/confirm-upload', verifyTokenStrict, async (req, res) => {
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
-    // Update user's image count
-    await User.findByIdAndUpdate(req.user.userId, {
-      $inc: { imagesUsed: 1 }
-    });
+    // Idempotent confirm: create a record if not exists, increment only once
+    const created = await ImageUpload.findOneAndUpdate(
+      { userId: req.user.userId, publicId: public_id },
+      { userId: req.user.userId, publicId: public_id, version },
+      { upsert: true, new: false, setDefaultsOnInsert: true }
+    );
+    if (!created) {
+      await User.findByIdAndUpdate(req.user.userId, { $inc: { imagesUsed: 1 } });
+    }
 
     // Construct the image URL
     const url = cloudinary.url(public_id, {
@@ -219,10 +225,13 @@ router.post('/', verifyTokenStrict, upload.single('image'), async (req, res) => 
       ).end(req.file.buffer);
     });
 
-    // Update user's image count
-    await User.findByIdAndUpdate(req.user.userId, {
-      $inc: { imagesUsed: 1 }
-    });
+    // Direct upload increments once and records entry to prevent future duplicates
+    await ImageUpload.findOneAndUpdate(
+      { userId: req.user.userId, publicId: uploadResult.public_id },
+      { userId: req.user.userId, publicId: uploadResult.public_id, version: uploadResult.version },
+      { upsert: true, new: false, setDefaultsOnInsert: true }
+    );
+    await User.findByIdAndUpdate(req.user.userId, { $inc: { imagesUsed: 1 } });
 
     res.json({
       success: true,
@@ -244,10 +253,14 @@ router.delete('/:id', verifyTokenStrict, async (req, res) => {
     // Delete from Cloudinary
     await cloudinary.uploader.destroy(id);
     
-    // Decrement user's image count
-    await User.findByIdAndUpdate(req.user.userId, {
-      $inc: { imagesUsed: -1 }
-    });
+    // Decrement only if we actually had a recorded upload
+    const removed = await ImageUpload.findOneAndUpdate(
+      { userId: req.user.userId, publicId: id },
+      { deletedAt: new Date() }
+    );
+    if (removed) {
+      await User.findByIdAndUpdate(req.user.userId, { $inc: { imagesUsed: -1 } });
+    }
 
     res.json({ success: true, message: 'Image deleted successfully' });
   } catch (error) {

@@ -17,6 +17,7 @@ const userRoutes = require('./routes/userRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
 const imageRoutes = require('./routes/imageRoutes');
+const securityRoutes = require('./routes/securityRoutes');
 
 // Create Express app
 const app = express();
@@ -101,6 +102,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/images', imageRoutes);
+app.use('/api/security', securityRoutes);
 console.log('✅ All routes registered');
 
 // Add a specific route for file downloads to make absolutely sure it's registered

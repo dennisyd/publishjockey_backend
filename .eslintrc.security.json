@@ -1,0 +1,12 @@
+{
+  "env": { "node": true, "es2021": true },
+  "parserOptions": { "ecmaVersion": 2021, "sourceType": "module" },
+  "plugins": ["security"],
+  "extends": ["plugin:security/recommended"],
+  "rules": {
+    "security/detect-object-injection": "off"
+  },
+  "ignorePatterns": ["node_modules/", "**/*.test.js", "__tests__/", "coverage/"]
+}
+
+

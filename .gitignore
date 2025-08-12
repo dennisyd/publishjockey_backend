@@ -11,3 +11,4 @@
 *.html 
 *.pdf
 .env
+node_modules/

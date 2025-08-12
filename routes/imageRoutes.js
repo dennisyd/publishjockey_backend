@@ -226,12 +226,14 @@ router.post('/', verifyTokenStrict, upload.single('image'), async (req, res) => 
     });
 
     // Direct upload increments once and records entry to prevent future duplicates
-    await ImageUpload.findOneAndUpdate(
+    const createdDirect = await ImageUpload.findOneAndUpdate(
       { userId: req.user.userId, publicId: uploadResult.public_id },
       { userId: req.user.userId, publicId: uploadResult.public_id, version: uploadResult.version },
       { upsert: true, new: false, setDefaultsOnInsert: true }
     );
-    await User.findByIdAndUpdate(req.user.userId, { $inc: { imagesUsed: 1 } });
+    if (!createdDirect) {
+      await User.findByIdAndUpdate(req.user.userId, { $inc: { imagesUsed: 1 } });
+    }
 
     res.json({
       success: true,
@@ -255,10 +257,10 @@ router.delete('/:id', verifyTokenStrict, async (req, res) => {
     
     // Decrement only if we actually had a recorded upload
     const removed = await ImageUpload.findOneAndUpdate(
-      { userId: req.user.userId, publicId: id },
+      { userId: req.user.userId, publicId: id, deletedAt: { $exists: false } },
       { deletedAt: new Date() }
     );
-    if (removed) {
+    if (removed && !removed.deletedAt) {
       await User.findByIdAndUpdate(req.user.userId, { $inc: { imagesUsed: -1 } });
     }
 

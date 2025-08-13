@@ -256,21 +256,32 @@ router.post('/', verifyTokenStrict, upload.single('image'), async (req, res) => 
 router.delete('/:id', verifyTokenStrict, async (req, res) => {
   try {
     const { id } = req.params;
-    
+    // Normalize id: may be Cloudinary public_id or a full URL
+    let publicId = id;
+    if (/^https?:\/\//i.test(id)) {
+      try {
+        const { extractPublicIdFromUrl } = require('../utils/imageScanner');
+        const extracted = extractPublicIdFromUrl(id);
+        if (extracted) publicId = extracted;
+      } catch (e) {
+        console.warn('[images] delete: failed to normalize URL to public_id', { id });
+      }
+    }
+
     // Delete from Cloudinary
-    await cloudinary.uploader.destroy(id);
-    
+    await cloudinary.uploader.destroy(publicId);
+
     // Decrement only if we actually had a recorded upload
-    console.log('[images] delete request', { userId: req.user.userId, public_id: id });
+    console.log('[images] delete request', { userId: req.user.userId, public_id: publicId });
     const removed = await ImageUpload.findOneAndUpdate(
-      { userId: req.user.userId, publicId: id, deletedAt: { $exists: false } },
+      { userId: req.user.userId, publicId: publicId, deletedAt: { $exists: false } },
       { deletedAt: new Date() }
     );
     if (removed && !removed.deletedAt) {
       await User.findByIdAndUpdate(req.user.userId, { $inc: { imagesUsed: -1 } });
-      console.log('[images] imagesUsed decremented on delete', { userId: req.user.userId, public_id: id });
+      console.log('[images] imagesUsed decremented on delete', { userId: req.user.userId, public_id: publicId });
     } else {
-      console.log('[images] delete duplicate ignored', { userId: req.user.userId, public_id: id });
+      console.log('[images] delete duplicate or unknown id ignored', { userId: req.user.userId, public_id: publicId });
     }
 
     res.json({ success: true, message: 'Image deleted successfully' });

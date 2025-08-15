@@ -23,7 +23,7 @@ router
 router
   .route('/:id')
   .get(getProject)
-  .put(validateProjectTitle, updateProject)
+  .put(updateProject)
   .delete(deleteProject);
 
 module.exports = router; 

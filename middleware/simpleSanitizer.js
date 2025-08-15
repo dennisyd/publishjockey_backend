@@ -47,10 +47,28 @@ const sanitizeText = (content) => {
     return placeholder;
   });
   
+  // Preserve markdown headers (# ## ### etc.)
+  const markdownHeaderRegex = /^(#{1,6})\s+(.+)$/gm;
+  const markdownHeaders = [];
+  let headerIndex = 0;
+  
+  // Temporarily replace markdown headers with placeholders
+  sanitized = sanitized.replace(markdownHeaderRegex, (match, hashes, text) => {
+    const placeholder = `__MARKDOWN_HEADER_${headerIndex}__`;
+    markdownHeaders[headerIndex] = { hashes, text };
+    headerIndex++;
+    return placeholder;
+  });
+  
   // Escape remaining angle brackets to prevent HTML injection
   sanitized = sanitized
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+  
+  // Restore markdown headers
+  markdownHeaders.forEach((header, index) => {
+    sanitized = sanitized.replace(`__MARKDOWN_HEADER_${index}__`, `${header.hashes} ${header.text}`);
+  });
   
   // Restore image comments
   imageComments.forEach((comment, index) => {

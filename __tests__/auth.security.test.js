@@ -13,6 +13,8 @@ describe('Authentication Security Tests', () => {
   let testUser;
   let authToken;
   let csrfToken;
+  let adminUser;
+  let adminToken;
 
   beforeAll(async () => {
     // Create test user
@@ -24,16 +26,27 @@ describe('Authentication Security Tests', () => {
       role: 'user',
       subscription: 'free'
     });
+
+    // Create admin user
+    adminUser = await User.create({
+      name: 'Admin User',
+      email: 'admin@example.com',
+      password: 'password123',
+      isVerified: true,
+      role: 'admin',
+      subscription: 'bundle20'
+    });
   });
 
   afterAll(async () => {
     // Clean up
     await User.findByIdAndDelete(testUser._id);
+    await User.findByIdAndDelete(adminUser._id);
     await mongoose.connection.close();
   });
 
   beforeEach(async () => {
-    // Login and get tokens
+    // Login and get tokens for regular user
     const loginResponse = await request(app)
       .post('/api/auth/login')
       .send({
@@ -42,6 +55,16 @@ describe('Authentication Security Tests', () => {
       });
 
     authToken = loginResponse.body.token;
+    
+    // Login and get tokens for admin user
+    const adminLoginResponse = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'admin@example.com',
+        password: 'password123'
+      });
+
+    adminToken = adminLoginResponse.body.token;
     
     // Get CSRF token (if available)
     const csrfResponse = await request(app)
@@ -345,6 +368,223 @@ describe('Authentication Security Tests', () => {
 
       // Should eventually get rate limited
       expect(attempts).toContain(429);
+    });
+  });
+
+  describe('Forged Request Protection', () => {
+    it('should return 401 for requests without authentication', async () => {
+      const response = await request(app)
+        .post('/api/projects')
+        .send({
+          title: 'Test Project',
+          content: 'Test content'
+        });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should return 401 for requests with invalid JWT token', async () => {
+      const response = await request(app)
+        .post('/api/projects')
+        .set('Authorization', 'Bearer invalid.token.here')
+        .set('x-nonce', generateNonce())
+        .set('x-timestamp', getTimestamp())
+        .send({
+          title: 'Test Project',
+          content: 'Test content'
+        });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should return 401 for requests with expired JWT token', async () => {
+      // Create an expired token
+      const jwt = require('jsonwebtoken');
+      const config = require('../config/config');
+      
+      const expiredToken = jwt.sign(
+        { userId: testUser._id, name: testUser.name, email: testUser.email, role: testUser.role },
+        config.jwt.accessTokenSecret,
+        { expiresIn: '1ms' } // Expires immediately
+      );
+
+      // Wait for token to expire
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const response = await request(app)
+        .post('/api/projects')
+        .set('Authorization', `Bearer ${expiredToken}`)
+        .set('x-nonce', generateNonce())
+        .set('x-timestamp', getTimestamp())
+        .send({
+          title: 'Test Project',
+          content: 'Test content'
+        });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should return 401 for requests with malformed JWT token', async () => {
+      const response = await request(app)
+        .post('/api/projects')
+        .set('Authorization', 'Bearer not.a.valid.jwt')
+        .set('x-nonce', generateNonce())
+        .set('x-timestamp', getTimestamp())
+        .send({
+          title: 'Test Project',
+          content: 'Test content'
+        });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should return 401 for requests with JWT signed with wrong secret', async () => {
+      const jwt = require('jsonwebtoken');
+      
+      const wrongSecretToken = jwt.sign(
+        { userId: testUser._id, name: testUser.name, email: testUser.email, role: testUser.role },
+        'wrong-secret-key',
+        { expiresIn: '15m' }
+      );
+
+      const response = await request(app)
+        .post('/api/projects')
+        .set('Authorization', `Bearer ${wrongSecretToken}`)
+        .set('x-nonce', generateNonce())
+        .set('x-timestamp', getTimestamp())
+        .send({
+          title: 'Test Project',
+          content: 'Test content'
+        });
+
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe('Authorization Tests', () => {
+    it('should return 403 for regular user accessing admin-only endpoint', async () => {
+      const response = await request(app)
+        .get('/api/admin/users')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-nonce', generateNonce())
+        .set('x-timestamp', getTimestamp());
+
+      expect(response.status).toBe(403);
+    });
+
+    it('should allow admin user to access admin-only endpoint', async () => {
+      const response = await request(app)
+        .get('/api/admin/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .set('x-nonce', generateNonce())
+        .set('x-timestamp', getTimestamp());
+
+      expect(response.status).toBe(200);
+    });
+
+    it('should return 403 for user trying to access another user\'s data', async () => {
+      // Create another user
+      const otherUser = await User.create({
+        name: 'Other User',
+        email: 'other@example.com',
+        password: 'password123',
+        isVerified: true,
+        role: 'user',
+        subscription: 'free'
+      });
+
+      // Try to access other user's profile with regular user token
+      const response = await request(app)
+        .get(`/api/users/${otherUser._id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-nonce', generateNonce())
+        .set('x-timestamp', getTimestamp());
+
+      expect(response.status).toBe(403);
+
+      // Clean up
+      await User.findByIdAndDelete(otherUser._id);
+    });
+
+    it('should allow admin to access any user\'s data', async () => {
+      // Create another user
+      const otherUser = await User.create({
+        name: 'Other User',
+        email: 'other@example.com',
+        password: 'password123',
+        isVerified: true,
+        role: 'user',
+        subscription: 'free'
+      });
+
+      // Admin should be able to access other user's profile
+      const response = await request(app)
+        .get(`/api/users/${otherUser._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .set('x-nonce', generateNonce())
+        .set('x-timestamp', getTimestamp());
+
+      expect(response.status).toBe(200);
+
+      // Clean up
+      await User.findByIdAndDelete(otherUser._id);
+    });
+  });
+
+  describe('Token Tampering Protection', () => {
+    it('should return 401 for token with tampered payload', async () => {
+      const jwt = require('jsonwebtoken');
+      const config = require('../config/config');
+      
+      // Create a valid token
+      const validToken = jwt.sign(
+        { userId: testUser._id, name: testUser.name, email: testUser.email, role: testUser.role },
+        config.jwt.accessTokenSecret,
+        { expiresIn: '15m' }
+      );
+
+      // Tamper with the payload (change role to admin)
+      const parts = validToken.split('.');
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+      payload.role = 'admin';
+      parts[1] = Buffer.from(JSON.stringify(payload)).toString('base64');
+      const tamperedToken = parts.join('.');
+
+      const response = await request(app)
+        .post('/api/projects')
+        .set('Authorization', `Bearer ${tamperedToken}`)
+        .set('x-nonce', generateNonce())
+        .set('x-timestamp', getTimestamp())
+        .send({
+          title: 'Test Project',
+          content: 'Test content'
+        });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should return 401 for token with missing required claims', async () => {
+      const jwt = require('jsonwebtoken');
+      const config = require('../config/config');
+      
+      // Create token without userId
+      const invalidToken = jwt.sign(
+        { name: testUser.name, email: testUser.email, role: testUser.role },
+        config.jwt.accessTokenSecret,
+        { expiresIn: '15m' }
+      );
+
+      const response = await request(app)
+        .post('/api/projects')
+        .set('Authorization', `Bearer ${invalidToken}`)
+        .set('x-nonce', generateNonce())
+        .set('x-timestamp', getTimestamp())
+        .send({
+          title: 'Test Project',
+          content: 'Test content'
+        });
+
+      expect(response.status).toBe(401);
     });
   });
 });

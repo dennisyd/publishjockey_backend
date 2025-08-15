@@ -132,6 +132,28 @@ app.use((req, res, next) => {
 });
 console.log('🛡️ Anti-replay protection enabled (excluding project routes)');
 
+// Apply CSRF protection to all state-changing operations
+app.use((req, res, next) => {
+  // Skip CSRF protection for GET, HEAD, OPTIONS requests
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+  
+  // Skip CSRF protection for auth routes (login, register, etc.)
+  if (req.path.startsWith('/api/auth/')) {
+    return next();
+  }
+  
+  // Skip CSRF protection for health check
+  if (req.path === '/api/health') {
+    return next();
+  }
+  
+  // Apply CSRF protection to all other state-changing operations
+  validateCsrfToken(req, res, next);
+});
+console.log('🛡️ CSRF protection enabled for state-changing operations');;
+
 // Routes
 console.log('🔗 Registering routes...');
 app.use('/api', splitDoctorRoutes);

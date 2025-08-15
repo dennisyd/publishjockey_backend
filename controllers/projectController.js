@@ -190,8 +190,9 @@ exports.updateProject = async (req, res) => {
       path: req.path,
       bodyKeys: Object.keys(req.body),
       hasContent: !!req.body.content,
-      contentLength: req.body.content ? req.body.content.length : 0,
-      contentPreview: req.body.content ? req.body.content.substring(0, 100) : 'N/A',
+      contentType: typeof req.body.content,
+      contentLength: req.body.content && typeof req.body.content === 'string' ? req.body.content.length : 0,
+      contentPreview: req.body.content && typeof req.body.content === 'string' ? req.body.content.substring(0, 100) : 'N/A',
       hasTitle: !!req.body.title,
       title: req.body.title
     });
@@ -259,8 +260,8 @@ exports.updateProject = async (req, res) => {
     // Debug: Log what was actually saved
     console.log('💾 PROJECT SAVED DEBUG:', {
       projectId: project._id,
-      savedContentLength: project.content ? project.content.length : 0,
-      savedContentPreview: project.content ? project.content.substring(0, 100) : 'N/A',
+      savedContentLength: project.content && typeof project.content === 'string' ? project.content.length : 0,
+      savedContentPreview: project.content && typeof project.content === 'string' ? project.content.substring(0, 100) : 'N/A',
       savedTitle: project.title,
       structureKeys: project.structure ? Object.keys(project.structure) : []
     });

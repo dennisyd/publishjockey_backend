@@ -15,12 +15,15 @@ const csrfProtection = doubleCsrf({
   getTokenFromRequest: (req) => req.headers['x-csrf-token'] || req.body._csrf
 });
 
+// Extract the middleware functions
+const { generateToken, validateRequest } = csrfProtection;
+
 // Middleware to generate CSRF token
 const generateCsrfToken = (req, res, next) => {
   try {
-    const token = csrfProtection.generateToken(req, res);
-    res.locals.csrfToken = token;
-    next();
+    // Use the correct API for csrf-csrf
+    const token = generateToken(req, res);
+    res.json({ csrfToken: token });
   } catch (error) {
     console.error('CSRF token generation error:', error);
     res.status(500).json({ error: 'Failed to generate CSRF token' });
@@ -30,7 +33,7 @@ const generateCsrfToken = (req, res, next) => {
 // Middleware to validate CSRF token
 const validateCsrfToken = (req, res, next) => {
   try {
-    csrfProtection.validateRequest(req, res);
+    validateRequest(req, res);
     next();
   } catch (error) {
     console.error('CSRF validation error:', error);

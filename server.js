@@ -96,14 +96,12 @@ const { securityMiddleware } = require('./middleware/security');
 app.use(securityMiddleware);
 console.log('🛡️ Security middleware enabled');
 
-// Apply anti-replay protection to all routes
+// CSRF token endpoint (exclude from anti-replay protection)
+app.get('/api/csrf-token', generateCsrfToken);
+
+// Apply anti-replay protection to all other routes
 app.use(validateNonce);
 console.log('🛡️ Anti-replay protection enabled');
-
-// CSRF token endpoint
-app.get('/api/csrf-token', generateCsrfToken, (req, res) => {
-  res.json({ csrfToken: res.locals.csrfToken });
-});
 
 // Routes
 console.log('🔗 Registering routes...');

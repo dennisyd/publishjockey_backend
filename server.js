@@ -1,6 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+
+// Configure Mongoose to suppress deprecation warnings
+mongoose.set('strictQuery', false);
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const splitDoctorRoutes = require('./routes/splitDoctorRoutes');

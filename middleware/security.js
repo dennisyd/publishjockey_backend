@@ -90,7 +90,7 @@ const securityMiddleware = [
   
   // Disable caching for sensitive routes
   (req, res, next) => {
-    if (req.path.startsWith('/api/auth')) {
+    if (req.path.startsWith('/api/auth') && !res.headersSent) {
       res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.set('Pragma', 'no-cache');
       res.set('Expires', '0');
@@ -120,7 +120,10 @@ const securityMiddleware = [
     const start = Date.now();
     res.on('finish', () => {
       const duration = Date.now() - start;
-      res.set('X-Response-Time', `${duration}ms`);
+      // Only set header if response hasn't been sent yet
+      if (!res.headersSent) {
+        res.set('X-Response-Time', `${duration}ms`);
+      }
     });
     
     next();
@@ -128,28 +131,31 @@ const securityMiddleware = [
   
   // Security headers for all responses
   (req, res, next) => {
-    // Prevent browsers from sniffing MIME types
-    res.set('X-Content-Type-Options', 'nosniff');
-    
-    // Prevent clickjacking
-    res.set('X-Frame-Options', 'DENY');
-    
-    // XSS protection
-    res.set('X-XSS-Protection', '1; mode=block');
-    
-    // Strict referrer policy
-    res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    
-    // Permissions policy
-    res.set('Permissions-Policy', 
-      'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()'
-    );
-    
-    // Cache control for API routes
-    if (req.path.startsWith('/api/')) {
-      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.set('Pragma', 'no-cache');
-      res.set('Expires', '0');
+    // Only set headers if response hasn't been sent yet
+    if (!res.headersSent) {
+      // Prevent browsers from sniffing MIME types
+      res.set('X-Content-Type-Options', 'nosniff');
+      
+      // Prevent clickjacking
+      res.set('X-Frame-Options', 'DENY');
+      
+      // XSS protection
+      res.set('X-XSS-Protection', '1; mode=block');
+      
+      // Strict referrer policy
+      res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+      
+      // Permissions policy
+      res.set('Permissions-Policy', 
+        'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()'
+      );
+      
+      // Cache control for API routes
+      if (req.path.startsWith('/api/')) {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+      }
     }
     
     next();

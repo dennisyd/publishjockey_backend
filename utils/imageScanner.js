@@ -8,29 +8,50 @@ function countImagesInValue(value) {
   if (typeof value === 'string') {
     const text = value;
 
-    // 1) Cloudinary URLs
-    const cloudinaryUrlRegex = /https?:\/\/res\.cloudinary\.com\/[\w\-]+\/[\w\-]+\/[\w\-]+\/[^\s)"'>]+/gi;
-    const cloudinaryMatches = text.match(cloudinaryUrlRegex);
-    if (cloudinaryMatches) count += cloudinaryMatches.length;
+    // Use a Set to track unique image URLs to avoid double-counting
+    const uniqueImageUrls = new Set();
 
-    // 2) Markdown images: ![alt](url)
+    // 1) Markdown images: ![alt](url) - Check these first
     const markdownImgRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
     let mdMatch;
     while ((mdMatch = markdownImgRegex.exec(text)) !== null) {
-      count += 1;
+      const url = mdMatch[1];
+      if (url.includes('cloudinary.com')) {
+        uniqueImageUrls.add(url);
+      }
     }
 
-    // 3) HTML <img src="...">
+    // 2) HTML <img src="...">
     const htmlImgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
     let htmlMatch;
     while ((htmlMatch = htmlImgRegex.exec(text)) !== null) {
-      count += 1;
+      const url = htmlMatch[1];
+      if (url.includes('cloudinary.com')) {
+        uniqueImageUrls.add(url);
+      }
+    }
+
+    // 3) Cloudinary URLs that are NOT already counted in markdown/HTML
+    const cloudinaryUrlRegex = /https?:\/\/res\.cloudinary\.com\/[\w\-]+\/[\w\-]+\/[\w\-]+\/[^\s)"'>]+/gi;
+    const cloudinaryMatches = text.match(cloudinaryUrlRegex);
+    if (cloudinaryMatches) {
+      cloudinaryMatches.forEach(url => {
+        // Only count if this URL wasn't already counted in markdown/HTML
+        if (!uniqueImageUrls.has(url)) {
+          uniqueImageUrls.add(url);
+        }
+      });
     }
 
     // 4) Placeholder images: {{IMAGE:name|width|height}}
     const placeholderRegex = /\{\{IMAGE:[^|}]*?(?:\|[^|}]*){0,2}\}\}/g;
     const placeholderMatches = text.match(placeholderRegex);
-    if (placeholderMatches) count += placeholderMatches.length;
+    if (placeholderMatches) {
+      count += placeholderMatches.length;
+    }
+
+    // Add the count of unique Cloudinary URLs
+    count += uniqueImageUrls.size;
 
     return count;
   }

@@ -144,6 +144,11 @@ app.use((req, res, next) => {
     return next();
   }
   
+  // Skip CSRF protection for project routes (temporarily)
+  if (req.path.startsWith('/api/projects')) {
+    return next();
+  }
+  
   // Skip CSRF protection for image routes (handled by Cloudinary)
   if (req.path.startsWith('/api/images/')) {
     return next();
@@ -151,6 +156,11 @@ app.use((req, res, next) => {
   
   // Skip CSRF protection for health check
   if (req.path === '/api/health') {
+    return next();
+  }
+  
+  // Skip CSRF protection for CSRF token endpoint
+  if (req.path === '/api/csrf-token') {
     return next();
   }
   

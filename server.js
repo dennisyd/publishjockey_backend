@@ -111,9 +111,15 @@ app.get('/health', (req, res) => {
 // CSRF token endpoint (exclude from anti-replay protection)
 app.get('/api/csrf-token', generateCsrfToken);
 
-// Apply anti-replay protection to all other routes
-app.use(validateNonce);
-console.log('🛡️ Anti-replay protection enabled');
+// Apply anti-replay protection to all routes EXCEPT project routes (temporarily)
+app.use((req, res, next) => {
+  // Skip anti-replay protection for project routes
+  if (req.path.startsWith('/api/projects')) {
+    return next();
+  }
+  validateNonce(req, res, next);
+});
+console.log('🛡️ Anti-replay protection enabled (excluding project routes)');
 
 // Routes
 console.log('🔗 Registering routes...');

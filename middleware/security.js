@@ -24,8 +24,14 @@ const securityMiddleware = [
   // Input sanitization (protect against NoSQL injection)
   sanitizeInput,
   
-  // Simple XSS protection (safer than DOM-based sanitization)
-  simpleSanitizerMiddleware,
+  // Simple XSS protection (safer than DOM-based sanitization) - EXCLUDE project routes
+  (req, res, next) => {
+    // Skip sanitization for project routes to preserve markdown content
+    if (req.path.startsWith('/api/projects')) {
+      return next();
+    }
+    simpleSanitizerMiddleware(req, res, next);
+  },
   
   // Basic security headers
   helmet(),

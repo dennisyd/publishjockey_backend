@@ -21,8 +21,14 @@ const securityMiddleware = [
   // General rate limiting (applied to all routes)
   rateLimiting.general,
   
-  // Input sanitization (protect against NoSQL injection)
-  sanitizeInput,
+  // Input sanitization (protect against NoSQL injection) - EXCLUDE project routes
+  (req, res, next) => {
+    // Skip MongoDB sanitization for project routes to preserve content
+    if (req.path.startsWith('/api/projects')) {
+      return next();
+    }
+    sanitizeInput(req, res, next);
+  },
   
   // Simple XSS protection (safer than DOM-based sanitization) - EXCLUDE project routes
   (req, res, next) => {

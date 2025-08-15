@@ -184,6 +184,18 @@ exports.createProject = async (req, res) => {
  */
 exports.updateProject = async (req, res) => {
   try {
+    // Debug: Log the incoming request
+    console.log('🔍 UPDATE PROJECT DEBUG:', {
+      method: req.method,
+      path: req.path,
+      bodyKeys: Object.keys(req.body),
+      hasContent: !!req.body.content,
+      contentLength: req.body.content ? req.body.content.length : 0,
+      contentPreview: req.body.content ? req.body.content.substring(0, 100) : 'N/A',
+      hasTitle: !!req.body.title,
+      title: req.body.title
+    });
+
     // Validate if the id is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({
@@ -243,6 +255,15 @@ exports.updateProject = async (req, res) => {
       req.body, 
       { new: true, runValidators: true }
     );
+
+    // Debug: Log what was actually saved
+    console.log('💾 PROJECT SAVED DEBUG:', {
+      projectId: project._id,
+      savedContentLength: project.content ? project.content.length : 0,
+      savedContentPreview: project.content ? project.content.substring(0, 100) : 'N/A',
+      savedTitle: project.title,
+      structureKeys: project.structure ? Object.keys(project.structure) : []
+    });
 
     // Title change monitoring (Single plans only; after 3 days; >25% delta)
     try {

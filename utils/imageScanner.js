@@ -65,12 +65,28 @@ async function scanUserImageUsage(userId, ProjectModel) {
     }).lean();
 
     let totalImageCount = 0;
+    const projectCounts = [];
 
     for (const project of projects) {
       if (project.content) {
-        totalImageCount += countImagesInValue(project.content);
+        const projectImageCount = countImagesInValue(project.content);
+        totalImageCount += projectImageCount;
+        if (projectImageCount > 0) {
+          projectCounts.push({
+            projectId: project._id,
+            title: project.title,
+            imageCount: projectImageCount
+          });
+        }
       }
     }
+
+    console.log('🔍 IMAGE SCAN DEBUG:', {
+      userId,
+      totalProjects: projects.length,
+      totalImageCount,
+      projectBreakdown: projectCounts
+    });
 
     return totalImageCount;
   } catch (error) {

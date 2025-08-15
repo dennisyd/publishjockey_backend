@@ -37,9 +37,21 @@ router.get('/usage', verifyTokenStrict, async (req, res) => {
     const actualUsage = await scanUserImageUsage(req.user.userId, Project);
     const totalLimit = user.getTotalImageLimit();
 
+    console.log('🔍 IMAGE USAGE DEBUG:', {
+      userId: req.user.userId,
+      previousCount: user.imagesUsed || 0,
+      actualUsage,
+      willUpdate: actualUsage !== (user.imagesUsed || 0)
+    });
+
     // Persist canonical used value from scan when different
     if (actualUsage !== (user.imagesUsed || 0)) {
       await User.findByIdAndUpdate(req.user.userId, { imagesUsed: actualUsage });
+      console.log('🔍 IMAGE COUNT UPDATED:', {
+        userId: req.user.userId,
+        from: user.imagesUsed || 0,
+        to: actualUsage
+      });
     }
 
     res.json({

@@ -21,12 +21,17 @@ const { generateToken, validateRequest } = csrfProtection;
 // Middleware to generate CSRF token
 const generateCsrfToken = (req, res, next) => {
   try {
+    // Check if CSRF_SECRET is set
+    const secret = process.env.CSRF_SECRET || 'your-secret-key';
+    console.log('CSRF_SECRET is set:', !!process.env.CSRF_SECRET);
+    
     // Use the correct API for csrf-csrf
     const token = generateToken(req, res);
+    console.log('CSRF token generated successfully');
     res.json({ csrfToken: token });
   } catch (error) {
     console.error('CSRF token generation error:', error);
-    res.status(500).json({ error: 'Failed to generate CSRF token' });
+    res.status(500).json({ error: 'Failed to generate CSRF token', details: error.message });
   }
 };
 

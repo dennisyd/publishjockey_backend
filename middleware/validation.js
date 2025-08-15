@@ -205,7 +205,55 @@ const validateContent = [
     .isString()
     .withMessage('Content must be a string')
     .isLength({ max: 100000 }) // 100KB limit
-    .withMessage('Content is too large (max 100,000 characters)'),
+    .withMessage('Content is too large (max 100,000 characters)')
+    .custom((value) => {
+      // Check for XSS patterns
+      const xssPatterns = [
+        /<script[^>]*>.*?<\/script>/gis,
+        /<iframe[^>]*>.*?<\/iframe>/gis,
+        /<object[^>]*>.*?<\/object>/gis,
+        /<embed[^>]*>/gi,
+        /javascript:/gi,
+        /vbscript:/gi,
+        /data:text\/html/gi,
+        /on\w+\s*=/gi,
+        /expression\s*\(/gi
+      ];
+      
+      for (const pattern of xssPatterns) {
+        if (pattern.test(value)) {
+          throw new Error('Content contains potentially dangerous patterns');
+        }
+      }
+      return true;
+    }),
+  
+  handleValidationErrors
+];
+
+// Enhanced project title validation with XSS prevention
+const validateProjectTitle = [
+  body('title')
+    .trim()
+    .isLength({ min: 1, max: 200 })
+    .withMessage('Project title must be between 1 and 200 characters')
+    .matches(/^[a-zA-Z0-9\s\-_.,!?'":()]+$/)
+    .withMessage('Project title contains invalid characters')
+    .custom((value) => {
+      // Additional XSS checks for titles
+      const dangerousPatterns = [
+        /<script/gi,
+        /javascript:/gi,
+        /on\w+\s*=/gi
+      ];
+      
+      for (const pattern of dangerousPatterns) {
+        if (pattern.test(value)) {
+          throw new Error('Title contains potentially dangerous content');
+        }
+      }
+      return true;
+    }),
   
   handleValidationErrors
 ];
@@ -221,5 +269,6 @@ module.exports = {
   validateQueryParams,
   validatePasswordReset,
   validatePasswordResetConfirm,
-  validateContent
+  validateContent,
+  validateProjectTitle
 }; 

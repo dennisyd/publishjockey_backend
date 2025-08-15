@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/auth');
+const { validateCsrfToken } = require('../middleware/csrf');
 const {
   getProjects,
   getProject,
@@ -16,12 +17,12 @@ router.use(verifyToken);
 router
   .route('/')
   .get(getProjects)
-  .post(createProject);
+  .post(validateCsrfToken, createProject);
 
 router
   .route('/:id')
   .get(getProject)
-  .put(updateProject)
-  .delete(deleteProject);
+  .put(validateCsrfToken, updateProject)
+  .delete(validateCsrfToken, deleteProject);
 
 module.exports = router; 

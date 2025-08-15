@@ -1,6 +1,8 @@
 const User = require('../models/User');
 const { generateJWT, generateRandomToken } = require('../utils/tokenUtils');
 const { sendVerificationEmail, sendPasswordResetEmail, sendPasswordChangeEmail } = require('../utils/emailUtils');
+const jwt = require('jsonwebtoken');
+const config = require('../config/config');
 const crypto = require('crypto');
 
 // Register user
@@ -270,10 +272,14 @@ const login = async (req, res) => {
       );
     }
 
-    // Generate token
-    console.log('Generating JWT token for user:', user._id.toString());
-    const token = generateJWT(user);
-    console.log('JWT token generated:', token ? `${token.substring(0, 10)}...` : 'none');
+    // Generate access and refresh tokens
+    console.log('Generating JWT tokens for user:', user._id.toString());
+    const accessToken = generateJWT(user, '15m'); // 15 minutes
+    const refreshToken = generateJWT(user, '7d'); // 7 days
+    console.log('JWT tokens generated:', {
+      accessToken: accessToken ? `${accessToken.substring(0, 10)}...` : 'none',
+      refreshToken: refreshToken ? `${refreshToken.substring(0, 10)}...` : 'none'
+    });
     
     // Prepare user object without sensitive data
     const userWithoutSensitiveData = {
@@ -285,18 +291,26 @@ const login = async (req, res) => {
       subscriptionExpires: user.subscriptionExpires
     };
     
-    // Set JWT as HTTP-only cookie
-    res.cookie('accessToken', token, {
+    // Set JWT as HTTP-only cookies
+    res.cookie('accessToken', accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // true in production, false in development
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      maxAge: 8 * 60 * 60 * 1000 // 8 hours in milliseconds
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000 // 15 minutes
+    });
+    
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
     
     res.status(200).json({
       success: true,
       message: 'Login successful',
-      token,
+      token: accessToken, // For backward compatibility
+      refreshToken: refreshToken,
       user: userWithoutSensitiveData
     });
   } catch (error) {
@@ -529,12 +543,90 @@ const updateProfile = async (req, res) => {
   }
 };
 
+// Refresh token
+const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken: clientRefreshToken } = req.body;
+    
+    if (!clientRefreshToken) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Refresh token is required' 
+      });
+    }
+    
+    // Verify the refresh token
+    try {
+      const decoded = jwt.verify(clientRefreshToken, config.jwt.accessTokenSecret);
+      
+      // Find the user
+      const user = await User.findById(decoded.userId);
+      if (!user) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Invalid refresh token' 
+        });
+      }
+      
+      // Generate new tokens
+      const newAccessToken = generateJWT(user, '15m');
+      const newRefreshToken = generateJWT(user, '7d');
+      
+      // Set new cookies
+      res.cookie('accessToken', newAccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 15 * 60 * 1000 // 15 minutes
+      });
+      
+      res.cookie('refreshToken', newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      });
+      
+      res.status(200).json({
+        success: true,
+        message: 'Token refreshed successfully',
+        token: newAccessToken,
+        refreshToken: newRefreshToken,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          subscription: user.subscription,
+          subscriptionExpires: user.subscriptionExpires
+        }
+      });
+      
+    } catch (jwtError) {
+      console.error('JWT verification error:', jwtError);
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid refresh token' 
+      });
+    }
+    
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Token refresh failed',
+      error: error.message 
+    });
+  }
+};
+
 module.exports = {
   register,
   verifyEmail,
   login,
   forgotPassword,
   resetPassword,
+  refreshToken,
   getCurrentUser,
   getMe: getCurrentUser, // Alias for getMe
   updateProfile

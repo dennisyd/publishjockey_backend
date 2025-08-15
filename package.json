@@ -20,6 +20,7 @@
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
+    "csrf-csrf": "^4.0.3",
     "dompurify": "^3.2.6",
     "dotenv": "^16.4.5",
     "express": "^4.17.1",
@@ -37,11 +38,11 @@
     "turndown": "^7.2.0"
   },
   "devDependencies": {
+    "depcheck": "^1.4.5",
+    "eslint-plugin-security": "^3.0.1",
     "jest": "^29.7.0",
     "mongodb-memory-server": "^10.1.4",
-    "supertest": "^7.0.0",
     "nodemon": "^2.0.14",
-    "eslint-plugin-security": "^3.0.1",
-    "depcheck": "^1.4.5"
+    "supertest": "^7.0.0"
   }
 }

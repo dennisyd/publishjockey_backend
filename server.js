@@ -21,6 +21,8 @@ const projectRoutes = require('./routes/projectRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
 const imageRoutes = require('./routes/imageRoutes');
 const securityRoutes = require('./routes/securityRoutes');
+const { validateNonce } = require('./middleware/antiReplay');
+const { validateCsrfToken, generateCsrfToken } = require('./middleware/csrf');
 
 // Create Express app
 const app = express();
@@ -93,6 +95,15 @@ app.get('/public-files/:dir/:file', (req, res) => {
 const { securityMiddleware } = require('./middleware/security');
 app.use(securityMiddleware);
 console.log('🛡️ Security middleware enabled');
+
+// Apply anti-replay protection to all routes
+app.use(validateNonce);
+console.log('🛡️ Anti-replay protection enabled');
+
+// CSRF token endpoint
+app.get('/api/csrf-token', generateCsrfToken, (req, res) => {
+  res.json({ csrfToken: res.locals.csrfToken });
+});
 
 // Routes
 console.log('🔗 Registering routes...');

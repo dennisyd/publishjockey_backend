@@ -56,7 +56,14 @@ app.use(cors({
   origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Stripe-Signature']
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'Stripe-Signature',
+    'x-nonce',
+    'x-timestamp', 
+    'x-csrf-token'
+  ]
 }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -95,6 +102,11 @@ app.get('/public-files/:dir/:file', (req, res) => {
 const { securityMiddleware } = require('./middleware/security');
 app.use(securityMiddleware);
 console.log('🛡️ Security middleware enabled');
+
+// Health check route (exclude from anti-replay protection)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
 
 // CSRF token endpoint (exclude from anti-replay protection)
 app.get('/api/csrf-token', generateCsrfToken);
@@ -136,10 +148,7 @@ app.get('/api/public-download', (req, res) => {
   downloadFile(req, res);
 });
 
-// Health check route
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Server is running' });
-});
+
 
 // Test route for debugging
 app.get('/test', (req, res) => {

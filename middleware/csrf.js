@@ -28,7 +28,12 @@ const generateCsrfToken = (req, res, next) => {
     // Use the correct API for csrf-csrf
     const token = generateToken(req, res);
     console.log('CSRF token generated successfully');
-    res.json({ csrfToken: token });
+    
+    // Return the token in response body for frontend to store in sessionStorage
+    res.json({ 
+      csrfToken: token,
+      message: 'CSRF token generated successfully'
+    });
   } catch (error) {
     console.error('CSRF token generation error:', error);
     res.status(500).json({ error: 'Failed to generate CSRF token', details: error.message });

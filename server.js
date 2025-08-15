@@ -122,15 +122,15 @@ app.get('/health', (req, res) => {
 // CSRF token endpoint (exclude from anti-replay protection)
 app.get('/api/csrf-token', generateCsrfToken);
 
-// Apply anti-replay protection to all routes EXCEPT project routes (temporarily)
+// Apply anti-replay protection to all routes EXCEPT project routes and image routes (temporarily)
 app.use((req, res, next) => {
-  // Skip anti-replay protection for project routes
-  if (req.path.startsWith('/api/projects')) {
+  // Skip anti-replay protection for project routes and image routes
+  if (req.path.startsWith('/api/projects') || req.path.startsWith('/api/images')) {
     return next();
   }
   validateNonce(req, res, next);
 });
-console.log('🛡️ Anti-replay protection enabled (excluding project routes)');
+console.log('🛡️ Anti-replay protection enabled (excluding project and image routes)');
 
 // Apply CSRF protection to all state-changing operations
 app.use((req, res, next) => {
@@ -141,6 +141,11 @@ app.use((req, res, next) => {
   
   // Skip CSRF protection for auth routes (login, register, etc.)
   if (req.path.startsWith('/api/auth/')) {
+    return next();
+  }
+  
+  // Skip CSRF protection for image routes (handled by Cloudinary)
+  if (req.path.startsWith('/api/images/')) {
     return next();
   }
   

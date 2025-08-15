@@ -11,16 +11,40 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Function to get all images for a user from Cloudinary
+// Function to get all images for a user from Cloudinary (supports multiple naming schemes)
 async function getUserCloudinaryImages(userId) {
   try {
-    const result = await cloudinary.search
-      .expression(`folder:user_${userId}`)
-      .sort_by([['created_at', 'desc']])
-      .max_results(500)
-      .execute();
-    
-    return result.resources;
+    // Try both folder and prefix patterns to capture all assets
+    const expressions = [
+      `folder:user_${userId}`,
+      `public_id:${userId}/*`
+    ];
+
+    const all = [];
+    for (const expr of expressions) {
+      try {
+        const result = await cloudinary.search
+          .expression(expr)
+          .sort_by([['created_at', 'desc']])
+          .max_results(500)
+          .execute();
+        all.push(...result.resources);
+      } catch (e) {
+        console.warn('Cloudinary search expression failed', { expr, error: e.message });
+      }
+    }
+
+    // Dedupe by public_id
+    const seen = new Set();
+    const deduped = [];
+    for (const r of all) {
+      if (!seen.has(r.public_id)) {
+        seen.add(r.public_id);
+        deduped.push(r);
+      }
+    }
+
+    return deduped;
   } catch (error) {
     console.error(`Error fetching Cloudinary images for user ${userId}:`, error);
     return [];
@@ -52,15 +76,34 @@ async function cleanupUserImages(userId) {
       return { deleted: 0, errors: 0 };
     }
     
-    // Find orphaned images
+    // First, prioritize entries explicitly marked as deleted in ledger
+    const ImageUpload = require('../models/ImageUpload');
+    const deletedLedger = await ImageUpload.find({ userId, deletedAt: { $exists: true } }).lean();
+    const deletedSet = new Set(deletedLedger.map(x => x.publicId));
+
+    // Find orphaned images via content scan
     const orphanedImages = await findOrphanedImages(userId, cloudinaryImages, Project);
     console.log(`Found ${orphanedImages.length} orphaned images for user ${userId}`);
     
     let deletedCount = 0;
     let errorCount = 0;
     
-    // Delete orphaned images
+    // Build deletion list: union of explicit-deleted and orphaned
+    const toDelete = [];
     for (const image of orphanedImages) {
+      if (!deletedSet.size || deletedSet.has(image.public_id)) {
+        toDelete.push(image);
+      }
+    }
+    // Also queue any ledger-marked publicIds not returned in search (fallback)
+    for (const publicId of deletedSet) {
+      if (!cloudinaryImages.find(img => img.public_id === publicId)) {
+        toDelete.push({ public_id: publicId });
+      }
+    }
+
+    // Delete candidates
+    for (const image of toDelete) {
       const deleted = await deleteCloudinaryImage(image.public_id);
       if (deleted) {
         deletedCount++;

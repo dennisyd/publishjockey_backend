@@ -30,19 +30,53 @@ const securityMiddleware = [
   // Basic security headers
   helmet(),
   
-  // Content Security Policy
+  // Enhanced Content Security Policy
   helmet.contentSecurityPolicy({
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'", // TODO: Remove after migrating to nonce-based CSP
+        "'unsafe-eval'" // Required for React development
+      ],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'", // TODO: Remove after migrating to nonce-based CSP
+        "https://fonts.googleapis.com" // If using Google Fonts
+      ],
+      imgSrc: [
+        "'self'",
+        "data:",
+        "blob:",
+        "https://res.cloudinary.com",
+        "https://*.cloudinary.com",
+        "https://images.unsplash.com" // TODO: Remove after self-hosting demo images
+      ],
+      connectSrc: [
+        "'self'",
+        "https://api.cloudinary.com",
+        "https://publishjockey-backend.onrender.com",
+        "https://publishjockey-export.onrender.com",
+        "https://publishjockey-frontend.vercel.app",
+        "https://api.stripe.com",
+        "https://checkout.stripe.com"
+      ],
+      fontSrc: [
+        "'self'",
+        "data:",
+        "https://fonts.gstatic.com" // If using Google Fonts
+      ],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'none'"]
-    }
+      frameSrc: ["'none'"],
+      workerSrc: ["'self'"],
+      manifestSrc: ["'self'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: []
+    },
+    reportOnly: false, // Set to true for testing
+    reportUri: '/api/csp-violation' // CSP violation reporting endpoint
   }),
   
   // Prevent clickjacking
@@ -65,8 +99,61 @@ const securityMiddleware = [
     next();
   },
   
-  // CORS
-  cors(corsOptions)
+  // Enhanced CORS with additional security
+  cors({
+    ...corsOptions,
+    exposedHeaders: [
+      'Content-Range', 
+      'X-Content-Range',
+      'X-Request-ID',
+      'X-Response-Time'
+    ]
+  }),
+  
+  // Additional security headers
+  (req, res, next) => {
+    // Request ID for tracking
+    req.id = req.headers['x-request-id'] || require('crypto').randomUUID();
+    res.set('X-Request-ID', req.id);
+    
+    // Response time tracking
+    const start = Date.now();
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      res.set('X-Response-Time', `${duration}ms`);
+    });
+    
+    next();
+  },
+  
+  // Security headers for all responses
+  (req, res, next) => {
+    // Prevent browsers from sniffing MIME types
+    res.set('X-Content-Type-Options', 'nosniff');
+    
+    // Prevent clickjacking
+    res.set('X-Frame-Options', 'DENY');
+    
+    // XSS protection
+    res.set('X-XSS-Protection', '1; mode=block');
+    
+    // Strict referrer policy
+    res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    
+    // Permissions policy
+    res.set('Permissions-Policy', 
+      'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()'
+    );
+    
+    // Cache control for API routes
+    if (req.path.startsWith('/api/')) {
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+    }
+    
+    next();
+  }
 ];
 
 module.exports = {

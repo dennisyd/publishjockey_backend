@@ -5,7 +5,7 @@ const cloudinary = require('cloudinary').v2;
 const { verifyToken, verifyTokenStrict } = require('../middleware/auth');
 const User = require('../models/User');
 const Project = require('../models/Project');
-const { scanUserImageUsage } = require('../utils/imageScanner');
+const { scanUserImageUsage, updateUserImageCount } = require('../utils/imageScanner');
 const ImageUpload = require('../models/ImageUpload');
 
 // Configure Cloudinary
@@ -24,7 +24,7 @@ const upload = multer({
   }
 });
 
-// Get user's image usage statistics (ledger-based count of uploaded assets)
+// Get user's image usage statistics (content scan; fast)
 router.get('/usage', verifyTokenStrict, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
@@ -32,26 +32,50 @@ router.get('/usage', verifyTokenStrict, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Ledger-based count of uploaded (and not deleted) assets
-    const ledgerCount = await ImageUpload.countDocuments({ userId: req.user.userId, deletedAt: { $exists: false } });
+    // Count images by scanning user's projects for Cloudinary URLs and image tags
+    const actualUsage = await scanUserImageUsage(req.user.userId, Project);
     const totalLimit = user.getTotalImageLimit();
 
-    // Persist canonical used value from ledger when different
-    if (ledgerCount !== (user.imagesUsed || 0)) {
-      await User.findByIdAndUpdate(req.user.userId, { imagesUsed: ledgerCount });
+    // Persist canonical used value from scan when different
+    if (actualUsage !== (user.imagesUsed || 0)) {
+      await User.findByIdAndUpdate(req.user.userId, { imagesUsed: actualUsage });
     }
 
     res.json({
-      used: ledgerCount,
+      used: actualUsage,
       allowed: user.imagesAllowed,
       additional: user.additionalImageSlots,
       total: totalLimit,
-      remaining: totalLimit - ledgerCount,
-      canUpload: ledgerCount < totalLimit
+      remaining: totalLimit - actualUsage,
+      canUpload: actualUsage < totalLimit
     });
   } catch (error) {
     console.error('Error fetching image usage:', error);
     res.status(500).json({ error: 'Failed to fetch image usage' });
+  }
+});
+
+// Force a fast recount based on content and persist it
+router.post('/recount', verifyTokenStrict, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const actualUsage = await updateUserImageCount(req.user.userId, User, Project);
+    const totalLimit = user.getTotalImageLimit();
+
+    res.json({
+      success: true,
+      used: actualUsage,
+      total: totalLimit,
+      remaining: totalLimit - actualUsage,
+      canUpload: actualUsage < totalLimit
+    });
+  } catch (error) {
+    console.error('Error recounting image usage:', error);
+    res.status(500).json({ error: 'Failed to recount image usage' });
   }
 });
 
@@ -145,7 +169,7 @@ router.post('/upload-url', verifyTokenStrict, async (req, res) => {
   }
 });
 
-// Confirm image upload and update user's count
+// Confirm image upload (no counter update; counting is content-based)
 router.post('/confirm-upload', verifyTokenStrict, async (req, res) => {
   try {
     const { public_id, version, signature } = req.body;
@@ -160,19 +184,12 @@ router.post('/confirm-upload', verifyTokenStrict, async (req, res) => {
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
-    // Idempotent confirm: create a record if not exists, increment only once
-    console.log('[images] confirm-upload request', { userId: req.user.userId, public_id });
-    const created = await ImageUpload.findOneAndUpdate(
+    // Optionally record the upload for diagnostics, but do not change counters
+    await ImageUpload.findOneAndUpdate(
       { userId: req.user.userId, publicId: public_id },
       { userId: req.user.userId, publicId: public_id, version },
-      { upsert: true, new: false, setDefaultsOnInsert: true }
+      { upsert: true, new: true, setDefaultsOnInsert: true }
     );
-    if (!created) {
-      await User.findByIdAndUpdate(req.user.userId, { $inc: { imagesUsed: 1 } });
-      console.log('[images] imagesUsed incremented via confirm-upload', { userId: req.user.userId, public_id });
-    } else {
-      console.log('[images] confirm-upload duplicate ignored', { userId: req.user.userId, public_id });
-    }
 
     // Construct the image URL
     const url = cloudinary.url(public_id, {
@@ -180,18 +197,14 @@ router.post('/confirm-upload', verifyTokenStrict, async (req, res) => {
       secure: true
     });
 
-    res.json({ 
-      success: true, 
-      message: 'Image upload confirmed',
-      url: url
-    });
+    res.json({ success: true, message: 'Image upload confirmed', url });
   } catch (error) {
     console.error('Error confirming upload:', error);
     res.status(500).json({ error: 'Failed to confirm upload' });
   }
 });
 
-// Upload image directly
+// Upload image directly (no counter update; counting is content-based)
 router.post('/', verifyTokenStrict, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
@@ -226,25 +239,14 @@ router.post('/', verifyTokenStrict, upload.single('image'), async (req, res) => 
       ).end(req.file.buffer);
     });
 
-    // Direct upload increments once and records entry to prevent future duplicates
-    console.log('[images] direct upload', { userId: req.user.userId, public_id: uploadResult.public_id });
-    const createdDirect = await ImageUpload.findOneAndUpdate(
+    // Record upload for diagnostics, but do not update counters here
+    await ImageUpload.findOneAndUpdate(
       { userId: req.user.userId, publicId: uploadResult.public_id },
       { userId: req.user.userId, publicId: uploadResult.public_id, version: uploadResult.version },
-      { upsert: true, new: false, setDefaultsOnInsert: true }
+      { upsert: true, new: true, setDefaultsOnInsert: true }
     );
-    if (!createdDirect) {
-      await User.findByIdAndUpdate(req.user.userId, { $inc: { imagesUsed: 1 } });
-      console.log('[images] imagesUsed incremented via direct upload', { userId: req.user.userId, public_id: uploadResult.public_id });
-    } else {
-      console.log('[images] direct upload duplicate ignored', { userId: req.user.userId, public_id: uploadResult.public_id });
-    }
 
-    res.json({
-      success: true,
-      url: uploadResult.secure_url,
-      public_id: uploadResult.public_id
-    });
+    res.json({ success: true, url: uploadResult.secure_url, public_id: uploadResult.public_id });
 
   } catch (error) {
     console.error('Upload error:', error);
@@ -252,7 +254,7 @@ router.post('/', verifyTokenStrict, upload.single('image'), async (req, res) => 
   }
 });
 
-// Delete image
+// Delete image (no counter update; counting is content-based)
 router.delete('/:id', verifyTokenStrict, async (req, res) => {
   try {
     const { id } = req.params;
@@ -270,19 +272,12 @@ router.delete('/:id', verifyTokenStrict, async (req, res) => {
 
     // Delete from Cloudinary
     await cloudinary.uploader.destroy(publicId);
-
-    // Decrement only if we actually had a recorded upload
-    console.log('[images] delete request', { userId: req.user.userId, public_id: publicId });
-    const removed = await ImageUpload.findOneAndUpdate(
-      { userId: req.user.userId, publicId: publicId, deletedAt: { $exists: false } },
+    
+    // Mark as deleted in diagnostics ledger (optional), but do not change counters here
+    await ImageUpload.findOneAndUpdate(
+      { userId: req.user.userId, publicId: publicId },
       { deletedAt: new Date() }
     );
-    if (removed && !removed.deletedAt) {
-      await User.findByIdAndUpdate(req.user.userId, { $inc: { imagesUsed: -1 } });
-      console.log('[images] imagesUsed decremented on delete', { userId: req.user.userId, public_id: publicId });
-    } else {
-      console.log('[images] delete duplicate or unknown id ignored', { userId: req.user.userId, public_id: publicId });
-    }
 
     res.json({ success: true, message: 'Image deleted successfully' });
   } catch (error) {

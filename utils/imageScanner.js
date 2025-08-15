@@ -134,9 +134,11 @@ async function getUserImageUrls(userId, ProjectModel) {
 // Function to extract public_id from Cloudinary URL
 function extractPublicIdFromUrl(cloudinaryUrl) {
   try {
+    // Normalize: strip query string and fragment first
+    const urlSansQuery = cloudinaryUrl.split('?')[0].split('#')[0];
     // Extract public_id from Cloudinary URL
     // Example: https://res.cloudinary.com/cloud_name/image/upload/v1234567890/folder/image.jpg
-    const match = cloudinaryUrl.match(/\/v\d+\/(.+?)(?:\.[^.]+)?$/);
+    const match = urlSansQuery.match(/\/v\d+\/(.+?)(?:\.[^.]+)?$/);
     return match ? match[1] : null;
   } catch (error) {
     console.error('Error extracting public_id from URL:', error);

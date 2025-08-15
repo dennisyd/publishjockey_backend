@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/auth');
 const { validateCsrfToken } = require('../middleware/csrf');
+const { validateProjectTitle, validateContent } = require('../middleware/validation');
 const {
   getProjects,
   getProject,
@@ -17,12 +18,12 @@ router.use(verifyToken);
 router
   .route('/')
   .get(getProjects)
-  .post(validateCsrfToken, createProject);
+  .post(validateCsrfToken, validateProjectTitle, createProject);
 
 router
   .route('/:id')
   .get(getProject)
-  .put(validateCsrfToken, updateProject)
+  .put(validateCsrfToken, validateProjectTitle, updateProject)
   .delete(validateCsrfToken, deleteProject);
 
 module.exports = router; 

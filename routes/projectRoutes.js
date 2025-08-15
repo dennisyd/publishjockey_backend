@@ -18,12 +18,12 @@ router.use(verifyToken);
 router
   .route('/')
   .get(getProjects)
-  .post(validateCsrfToken, validateProjectTitle, createProject);
+  .post(validateProjectTitle, createProject);
 
 router
   .route('/:id')
   .get(getProject)
-  .put(validateCsrfToken, validateProjectTitle, updateProject)
-  .delete(validateCsrfToken, deleteProject);
+  .put(validateProjectTitle, updateProject)
+  .delete(deleteProject);
 
 module.exports = router; 

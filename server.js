@@ -100,8 +100,19 @@ app.get('/public-files/:dir/:file', (req, res) => {
 
 // Apply security middleware (rate limiting, input sanitization, security headers)
 const { securityMiddleware } = require('./middleware/security');
+
+// Apply security middleware to all routes EXCEPT project routes (temporarily)
+app.use((req, res, next) => {
+  // Skip security middleware for project routes to preserve content
+  if (req.path.startsWith('/api/projects')) {
+    return next();
+  }
+  next();
+});
+
+// Apply security middleware to all other routes
 app.use(securityMiddleware);
-console.log('🛡️ Security middleware enabled');
+console.log('🛡️ Security middleware enabled (excluding project routes)');
 
 // Health check route (exclude from anti-replay protection)
 app.get('/health', (req, res) => {

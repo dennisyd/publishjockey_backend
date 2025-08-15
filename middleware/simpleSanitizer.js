@@ -34,10 +34,28 @@ const sanitizeText = (content) => {
     sanitized = sanitized.replace(pattern, '');
   });
   
+  // Preserve HTML comments in image tags (for image scaling)
+  const imageCommentRegex = /(<!--\s*scale:\s*[\d.]+?\s*-->)/g;
+  const imageComments = [];
+  let commentIndex = 0;
+  
+  // Temporarily replace image comments with placeholders
+  sanitized = sanitized.replace(imageCommentRegex, (match) => {
+    const placeholder = `__IMAGE_COMMENT_${commentIndex}__`;
+    imageComments[commentIndex] = match;
+    commentIndex++;
+    return placeholder;
+  });
+  
   // Escape remaining angle brackets to prevent HTML injection
   sanitized = sanitized
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+  
+  // Restore image comments
+  imageComments.forEach((comment, index) => {
+    sanitized = sanitized.replace(`__IMAGE_COMMENT_${index}__`, comment);
+  });
   
   return sanitized;
 };

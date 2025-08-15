@@ -191,8 +191,8 @@ exports.updateProject = async (req, res) => {
       bodyKeys: Object.keys(req.body),
       hasContent: !!req.body.content,
       contentType: typeof req.body.content,
-      contentLength: req.body.content && typeof req.body.content === 'string' ? req.body.content.length : 0,
-      contentPreview: req.body.content && typeof req.body.content === 'string' ? req.body.content.substring(0, 100) : 'N/A',
+      contentKeys: req.body.content && typeof req.body.content === 'object' ? Object.keys(req.body.content) : [],
+      contentPreview: req.body.content && typeof req.body.content === 'object' ? JSON.stringify(req.body.content).substring(0, 200) : 'N/A',
       hasTitle: !!req.body.title,
       title: req.body.title
     });
@@ -260,8 +260,8 @@ exports.updateProject = async (req, res) => {
     // Debug: Log what was actually saved
     console.log('💾 PROJECT SAVED DEBUG:', {
       projectId: project._id,
-      savedContentLength: project.content && typeof project.content === 'string' ? project.content.length : 0,
-      savedContentPreview: project.content && typeof project.content === 'string' ? project.content.substring(0, 100) : 'N/A',
+      savedContentKeys: project.content && typeof project.content === 'object' ? Object.keys(project.content) : [],
+      savedContentPreview: project.content && typeof project.content === 'object' ? JSON.stringify(project.content).substring(0, 200) : 'N/A',
       savedTitle: project.title,
       structureKeys: project.structure ? Object.keys(project.structure) : []
     });

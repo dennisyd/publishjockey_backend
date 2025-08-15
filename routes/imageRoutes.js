@@ -134,7 +134,7 @@ router.post('/validate-export', verifyTokenStrict, async (req, res) => {
 });
 
 // Get upload URL (pre-signed upload)
-router.post('/upload-url', verifyTokenStrict, validateCsrfToken, async (req, res) => {
+router.post('/upload-url', verifyTokenStrict, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
     if (!user) {
@@ -171,7 +171,7 @@ router.post('/upload-url', verifyTokenStrict, validateCsrfToken, async (req, res
 });
 
 // Confirm image upload (no counter update; counting is content-based)
-router.post('/confirm-upload', verifyTokenStrict, validateCsrfToken, async (req, res) => {
+router.post('/confirm-upload', verifyTokenStrict, async (req, res) => {
   try {
     const { public_id, version, signature } = req.body;
     
@@ -206,7 +206,7 @@ router.post('/confirm-upload', verifyTokenStrict, validateCsrfToken, async (req,
 });
 
 // Upload image directly (no counter update; counting is content-based)
-router.post('/', verifyTokenStrict, validateCsrfToken, upload.single('image'), async (req, res) => {
+router.post('/', verifyTokenStrict, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' });
@@ -256,7 +256,7 @@ router.post('/', verifyTokenStrict, validateCsrfToken, upload.single('image'), a
 });
 
 // Delete image (no counter update; counting is content-based)
-router.delete('/:id', verifyTokenStrict, validateCsrfToken, async (req, res) => {
+router.delete('/:id', verifyTokenStrict, async (req, res) => {
   try {
     const { id } = req.params;
     // Normalize id: may be Cloudinary public_id or a full URL

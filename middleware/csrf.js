@@ -25,8 +25,10 @@ const generateCsrfToken = (req, res, next) => {
     const secret = process.env.CSRF_SECRET || 'your-secret-key';
     console.log('CSRF_SECRET is set:', !!process.env.CSRF_SECRET);
     
-    // Use the correct API for csrf-csrf
-    const token = generateToken(req, res);
+    // Generate a simple token using crypto
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    
     console.log('CSRF token generated successfully');
     
     // Return the token in response body for frontend to store in sessionStorage

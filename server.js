@@ -119,6 +119,11 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
+// API health check route for frontend
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'API server is running' });
+});
+
 // CSRF token endpoint (exclude from anti-replay protection)
 app.get('/api/csrf-token', generateCsrfToken);
 

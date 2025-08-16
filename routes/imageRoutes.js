@@ -4,6 +4,7 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { verifyToken, verifyTokenStrict } = require('../middleware/auth');
 const { validateCsrfToken } = require('../middleware/csrf');
+const { handleFileUploadError, validateUploadedFile } = require('../middleware/fileUploadValidation');
 const User = require('../models/User');
 const Project = require('../models/Project');
 const { scanUserImageUsage, updateUserImageCount } = require('../utils/imageScanner');
@@ -16,12 +17,28 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Configure multer for memory storage
+// Configure multer for memory storage with enhanced validation
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
+    fileSize: 15 * 1024 * 1024 // 15MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error('Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.'), false);
+    }
+    
+    // Validate file extension
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
+    if (!allowedExtensions.includes(fileExtension)) {
+      return cb(new Error('Invalid file extension. Only .jpg, .jpeg, .png, .gif, and .webp files are allowed.'), false);
+    }
+    
+    cb(null, true);
   }
 });
 
@@ -218,11 +235,8 @@ router.post('/confirm-upload', verifyTokenStrict, async (req, res) => {
 });
 
 // Upload image directly (no counter update; counting is content-based)
-router.post('/', verifyTokenStrict, upload.single('image'), async (req, res) => {
+router.post('/', verifyTokenStrict, upload.single('image'), handleFileUploadError, validateUploadedFile, async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No image file provided' });
-    }
 
     const user = await User.findById(req.user.userId);
     if (!user) {

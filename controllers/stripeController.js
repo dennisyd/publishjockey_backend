@@ -1,20 +1,5 @@
 const User = require('../models/User');
-const { stripe, SUBSCRIPTION_PLANS } = require('../config/stripe');
-// Helper: determine imagesAllowed per plan for immediate consistency
-const getImagesAllowedForPlan = (planId) => {
-  const map = {
-    free: 2,
-    beta: 10,
-    single: 10,
-    single_promo: 12,
-    bundle10: 100,
-    bundle10_promo: 120,
-    bundle20: 200,
-    bundle20_promo: 220,
-    additional: 10,
-  };
-  return map[planId] ?? 2;
-};
+const { stripe, SUBSCRIPTION_PLANS, getImagesAllowedForPlan } = require('../config/stripe');
 const { isPromoActiveNow } = require('../config/launchOffer');
 const crypto = require('crypto');
 
@@ -39,7 +24,7 @@ const createCheckoutSession = async (req, res) => {
     const plan = SUBSCRIPTION_PLANS[planId];
 
     // Server-side promo enforcement
-    const isPromoPlan = ['single_promo', 'bundle10_promo', 'bundle20_promo'].includes(planId);
+    const isPromoPlan = ['single_promo', 'bundle5_promo', 'bundle10_promo', 'bundle20_promo', 'poweruser_promo', 'agency_promo'].includes(planId);
     if (isPromoPlan) {
       const user = await User.findById(userId);
       if (!user) {
@@ -51,7 +36,12 @@ const createCheckoutSession = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Promotional plans are no longer available.' });
       }
       // One promo redemption per account per promo plan group
-      const groupKey = planId.startsWith('single') ? 'single' : planId.includes('bundle10') ? 'bundle10' : 'bundle20';
+      const groupKey = planId.startsWith('single') ? 'single' : 
+                      planId.includes('bundle5') ? 'bundle5' :
+                      planId.includes('bundle10') ? 'bundle10' : 
+                      planId.includes('bundle20') ? 'bundle20' :
+                      planId.includes('poweruser') ? 'poweruser' :
+                      planId.includes('agency') ? 'agency' : 'other';
       if (user.promoRedemptions && user.promoRedemptions[groupKey]) {
         return res.status(400).json({ success: false, message: 'You have already redeemed this promotional plan.' });
       }
@@ -162,13 +152,16 @@ const handleCheckoutSessionCompleted = async (session) => {
         $inc: { additionalImageSlots: 100 }
       };
     } else {
-      // Plan purchase
+      // Plan purchase - determine duration based on plan type
+      const isPowerUserOrAgency = planId.includes('poweruser') || planId.includes('agency');
+      const durationYears = isPowerUserOrAgency ? 1 : 3;
+      
       update = {
         ...update,
         subscription: planId,
         booksAllowed: plan.booksAllowed,
         booksRemaining: plan.booksAllowed,
-        subscriptionExpires: new Date(Date.now() + (3 * 365 * 24 * 60 * 60 * 1000)),
+        subscriptionExpires: new Date(Date.now() + (durationYears * 365 * 24 * 60 * 60 * 1000)),
         imagesAllowed: getImagesAllowedForPlan(planId)
       };
     }
@@ -176,9 +169,14 @@ const handleCheckoutSessionCompleted = async (session) => {
     const updatedUser = await User.findByIdAndUpdate(userId, update, { new: true });
 
     // Mark promo redemption if applicable
-    const isPromo = ['single_promo', 'bundle10_promo', 'bundle20_promo'].includes(planId);
+    const isPromo = ['single_promo', 'bundle5_promo', 'bundle10_promo', 'bundle20_promo', 'poweruser_promo', 'agency_promo'].includes(planId);
     if (isPromo) {
-      const groupKey = planId.startsWith('single') ? 'single' : planId.includes('bundle10') ? 'bundle10' : 'bundle20';
+      const groupKey = planId.startsWith('single') ? 'single' : 
+                      planId.includes('bundle5') ? 'bundle5' :
+                      planId.includes('bundle10') ? 'bundle10' : 
+                      planId.includes('bundle20') ? 'bundle20' :
+                      planId.includes('poweruser') ? 'poweruser' :
+                      planId.includes('agency') ? 'agency' : 'other';
       await User.findByIdAndUpdate(userId, {
         $set: { [`promoRedemptions.${groupKey}`]: true }
       });

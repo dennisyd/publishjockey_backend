@@ -32,7 +32,7 @@ const UserSchema = new mongoose.Schema({
   },
   subscription: {
     type: String,
-    enum: ['free', 'beta', 'single', 'single_promo', 'bundle10', 'bundle10_promo', 'bundle20', 'bundle20_promo', 'additional', 'custom'],
+    enum: ['free', 'beta', 'single', 'single_promo', 'bundle5', 'bundle5_promo', 'bundle10', 'bundle10_promo', 'bundle20', 'bundle20_promo', 'poweruser', 'poweruser_promo', 'agency', 'agency_promo', 'additional', 'custom'],
     default: 'free'
   },
   booksRemaining: {
@@ -116,8 +116,11 @@ const UserSchema = new mongoose.Schema({
     type: Object,
     default: {
       single: false,
+      bundle5: false,
       bundle10: false,
-      bundle20: false
+      bundle20: false,
+      poweruser: false,
+      agency: false
     }
   }
 });
@@ -163,20 +166,26 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
   }
 };
 
-// Method to update books remaining after subscription update
-UserSchema.methods.updateBooksAllowance = function() {
-  const planLimits = {
-    'free': 1,
-    'beta': 1, // Beta users get 1 book, like free users, but do not pay
-    'single': 1,
-    'single_promo': 1,
-    'bundle10': 10,
-    'bundle10_promo': 10,
-    'bundle20': 20,
-    'bundle20_promo': 20,
-    'additional': 1, // Additional book purchase
-    'custom': 50 // Default for custom, can be overridden
-  };
+  // Method to update books remaining after subscription update
+  UserSchema.methods.updateBooksAllowance = function() {
+    const planLimits = {
+      'free': 1,
+      'beta': 1, // Beta users get 1 book, like free users, but do not pay
+      'single': 1,
+      'single_promo': 1,
+      'bundle5': 5,
+      'bundle5_promo': 5,
+      'bundle10': 10,
+      'bundle10_promo': 10,
+      'bundle20': 20,
+      'bundle20_promo': 20,
+      'poweruser': 48,
+      'poweruser_promo': 48,
+      'agency': 180,
+      'agency_promo': 180,
+      'additional': 1, // Additional book purchase
+      'custom': 50 // Default for custom, can be overridden
+    };
   
   this.booksAllowed = planLimits[this.subscription] || 1;
   
@@ -190,19 +199,25 @@ UserSchema.methods.updateBooksAllowance = function() {
   // Otherwise keep the current remaining count
 };
 
-// Method to update image limits based on subscription
-UserSchema.methods.updateImageLimits = function() {
-  const imagePlanLimits = {
-    'free': 2,        // Free plan: 2 images max for testing
-    'beta': 10,       // Beta users: 10 images (granted by admin)
-    'single': 10,     // Single book plan: 10 images
-    'single_promo': 12,
-    'bundle10': 100,
-    'bundle10_promo': 120,
-    'bundle20': 200,
-    'bundle20_promo': 220,
-    'additional': 10, // Additional book: +10 images
-  };
+  // Method to update image limits based on subscription
+  UserSchema.methods.updateImageLimits = function() {
+    const imagePlanLimits = {
+      'free': 2,        // Free plan: 2 images max for testing
+      'beta': 10,       // Beta users: 10 images (granted by admin)
+      'single': 12,     // Single book plan: 12 images
+      'single_promo': 11,
+      'bundle5': 50,
+      'bundle5_promo': 55,
+      'bundle10': 100,
+      'bundle10_promo': 110,
+      'bundle20': 200,
+      'bundle20_promo': 220,
+      'poweruser': 480,
+      'poweruser_promo': 528,
+      'agency': 1800,
+      'agency_promo': 1980,
+      'additional': 10, // Additional book: +10 images
+    };
   
   this.imagesAllowed = imagePlanLimits[this.subscription] || 2; // Default to 2 for free plan
 };

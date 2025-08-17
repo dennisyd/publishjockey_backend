@@ -24,7 +24,6 @@ const imageRoutes = require('./routes/imageRoutes');
 const securityRoutes = require('./routes/securityRoutes');
 const { validateNonce, clearNonceStore, getNonceStoreStats } = require('./middleware/antiReplay');
 const { validateCsrfToken, generateCsrfToken } = require('./middleware/csrf');
-const { v4: uuidv4 } = require('uuid');
 
 // Create Express app
 const app = express();
@@ -166,7 +165,8 @@ if (process.env.NODE_ENV === 'development') {
   
   // Add a simple test endpoint to verify UUID generation
   app.get('/api/test-uuid', (req, res) => {
-    const testUuid = uuidv4();
+    const { generateNonce } = require('./middleware/antiReplay');
+    const testUuid = generateNonce();
     res.json({
       success: true,
       uuid: testUuid,
@@ -177,11 +177,12 @@ if (process.env.NODE_ENV === 'development') {
   
   // Add a test endpoint to generate multiple UUIDs and check uniqueness
   app.get('/api/test-uuid-uniqueness', (req, res) => {
+    const { generateNonce } = require('./middleware/antiReplay');
     const uuids = [];
     const uuidSet = new Set();
     
     for (let i = 0; i < 10; i++) {
-      const uuid = uuidv4();
+      const uuid = generateNonce();
       uuids.push(uuid);
       uuidSet.add(uuid);
     }

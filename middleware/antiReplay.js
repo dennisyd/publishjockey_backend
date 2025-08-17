@@ -3,7 +3,8 @@
  * Prevents replay attacks by validating nonces and timestamps
  */
 
-const { v4: uuidv4 } = require('uuid');
+// Use a more compatible UUID generation approach
+const crypto = require('crypto');
 
 // In-memory store for used nonces (in production, use Redis)
 const nonceStore = new Map();
@@ -202,10 +203,27 @@ const validateNonce = (req, res, next) => {
 };
 
 /**
- * Generate a UUID for nonce
+ * Generate a UUID for nonce using crypto
  */
 const generateNonce = () => {
-  return uuidv4();
+  // Generate a UUID v4 using crypto
+  const bytes = crypto.randomBytes(16);
+  
+  // Set version (4) and variant bits
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // Version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // Variant 10
+  
+  // Convert to hex string
+  const hex = bytes.toString('hex');
+  
+  // Format as UUID
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20, 32)
+  ].join('-');
 };
 
 /**

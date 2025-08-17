@@ -47,7 +47,7 @@ const upload = multer({
 });
 
 // Route to upload and process a document
-router.post('/split-document', verifyToken, validateNonce, validateCsrfToken, upload.single('document'), splitDoctorController.splitDocument);
+router.post('/split-document', verifyToken, validateCsrfToken, upload.single('document'), splitDoctorController.splitDocument);
 
 // We don't need a custom download route as we're using the public-files endpoint
 

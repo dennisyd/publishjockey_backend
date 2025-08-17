@@ -31,6 +31,14 @@ const generateCsrfToken = (req, res, next) => {
     
     console.log('CSRF token generated successfully');
     
+    // Set the token in a cookie for the csrf-csrf library
+    res.cookie('XSRF-TOKEN', token, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+    
     // Return the token in response body for frontend to store in sessionStorage
     res.json({ 
       csrfToken: token,

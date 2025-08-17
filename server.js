@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
 
 // Configure Mongoose to suppress deprecation warnings
 mongoose.set('strictQuery', false);
@@ -21,8 +22,9 @@ const projectRoutes = require('./routes/projectRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
 const imageRoutes = require('./routes/imageRoutes');
 const securityRoutes = require('./routes/securityRoutes');
-const { validateNonce } = require('./middleware/antiReplay');
+const { validateNonce, clearNonceStore, getNonceStoreStats } = require('./middleware/antiReplay');
 const { validateCsrfToken, generateCsrfToken } = require('./middleware/csrf');
+const { v4: uuidv4 } = require('uuid');
 
 // Create Express app
 const app = express();
@@ -62,9 +64,13 @@ app.use(cors({
     'Stripe-Signature',
     'x-nonce',
     'x-timestamp', 
-    'x-csrf-token'
+    'x-csrf-token',
+    'Cache-Control',
+    'Pragma',
+    'Expires'
   ]
 }));
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve static files from uploads directory
@@ -127,15 +133,79 @@ app.get('/api/health', (req, res) => {
 // CSRF token endpoint (exclude from anti-replay protection)
 app.get('/api/csrf-token', generateCsrfToken);
 
-// Apply anti-replay protection to all routes EXCEPT project routes and image routes (temporarily)
+// Test endpoint to clear nonce store (development only)
+if (process.env.NODE_ENV === 'development') {
+  app.post('/api/clear-nonces', (req, res) => {
+    const clearedCount = clearNonceStore();
+    res.json({ 
+      success: true, 
+      message: `Cleared ${clearedCount} nonces from store`,
+      timestamp: new Date().toISOString()
+    });
+  });
+  
+  // Also add a GET endpoint for easier testing
+  app.get('/api/clear-nonces', (req, res) => {
+    const clearedCount = clearNonceStore();
+    res.json({ 
+      success: true, 
+      message: `Cleared ${clearedCount} nonces from store`,
+      timestamp: new Date().toISOString()
+    });
+  });
+  
+  // Add endpoint to get nonce store statistics
+  app.get('/api/nonce-stats', (req, res) => {
+    const stats = getNonceStoreStats();
+    res.json({ 
+      success: true, 
+      stats,
+      timestamp: new Date().toISOString()
+    });
+  });
+  
+  // Add a simple test endpoint to verify UUID generation
+  app.get('/api/test-uuid', (req, res) => {
+    const testUuid = uuidv4();
+    res.json({
+      success: true,
+      uuid: testUuid,
+      isUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(testUuid),
+      timestamp: new Date().toISOString()
+    });
+  });
+  
+  // Add a test endpoint to generate multiple UUIDs and check uniqueness
+  app.get('/api/test-uuid-uniqueness', (req, res) => {
+    const uuids = [];
+    const uuidSet = new Set();
+    
+    for (let i = 0; i < 10; i++) {
+      const uuid = uuidv4();
+      uuids.push(uuid);
+      uuidSet.add(uuid);
+    }
+    
+    res.json({
+      success: true,
+      uuids: uuids.map(uuid => uuid.substring(0, 8) + '...'),
+      uniqueCount: uuidSet.size,
+      totalCount: uuids.length,
+      allUnique: uuidSet.size === uuids.length,
+      timestamp: new Date().toISOString()
+    });
+  });
+}
+
+// Apply anti-replay protection to all routes EXCEPT auth routes, project routes and image routes
 app.use((req, res, next) => {
-  // Skip anti-replay protection for project routes and image routes
-  if (req.path.startsWith('/api/projects') || req.path.startsWith('/api/images')) {
+  // Skip anti-replay protection for auth routes, project routes and image routes
+  if (req.path.startsWith('/api/auth/') || req.path.startsWith('/api/projects') || req.path.startsWith('/api/images')) {
     return next();
   }
   validateNonce(req, res, next);
 });
-console.log('🛡️ Anti-replay protection enabled (excluding project and image routes)');
+console.log('🛡️ Anti-replay protection enabled (excluding auth, project and image routes)');
 
 // Apply CSRF protection to all state-changing operations
 app.use((req, res, next) => {
@@ -172,7 +242,7 @@ app.use((req, res, next) => {
   // Apply CSRF protection to all other state-changing operations
   validateCsrfToken(req, res, next);
 });
-console.log('🛡️ CSRF protection enabled for state-changing operations');;
+console.log('🛡️ CSRF protection enabled for state-changing operations');
 
 // Routes
 console.log('🔗 Registering routes...');
@@ -206,8 +276,6 @@ app.get('/api/public-download', (req, res) => {
   // Don't use any auth middleware
   downloadFile(req, res);
 });
-
-
 
 // Test route for debugging
 app.get('/test', (req, res) => {
@@ -244,8 +312,6 @@ app.get('/api/auth/login', (req, res) => {
     path: req.path
   });
 });
-
-
 
 // Error handling middleware
 app.use(notFound);

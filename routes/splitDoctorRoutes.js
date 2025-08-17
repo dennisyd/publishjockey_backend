@@ -6,6 +6,7 @@ const fs = require('fs');
 const splitDoctorController = require('../controllers/splitDoctorController');
 const { verifyToken } = require('../middleware/auth');
 const { validateNonce } = require('../middleware/antiReplay');
+const { validateCsrfToken } = require('../middleware/csrf');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -46,7 +47,7 @@ const upload = multer({
 });
 
 // Route to upload and process a document
-router.post('/split-document', verifyToken, validateNonce, upload.single('document'), splitDoctorController.splitDocument);
+router.post('/split-document', verifyToken, validateNonce, validateCsrfToken, upload.single('document'), splitDoctorController.splitDocument);
 
 // We don't need a custom download route as we're using the public-files endpoint
 

@@ -10,13 +10,13 @@ const SUBSCRIPTION_PLANS = {
     priceId: process.env.STRIPE_SINGLE_PRICE_ID,
     price: 9300, // $93.00
     booksAllowed: 1,
-    imagesAllowed: 12
+    imagesAllowed: 10
   },
   bundle5: {
     name: '5 Book Pack',
     description: 'Publish up to 5 books (3-year validity)',
     priceId: process.env.STRIPE_BUNDLE5_PRICE_ID,
-    price: 19900, // $199.00
+    price: 34900, // $349.00
     booksAllowed: 5,
     imagesAllowed: 50
   },
@@ -24,7 +24,7 @@ const SUBSCRIPTION_PLANS = {
     name: '10 Book Pack',
     description: 'Publish up to 10 books (3-year validity)',
     priceId: process.env.STRIPE_BUNDLE10_PRICE_ID,
-    price: 34900, // $349.00
+    price: 59900, // $599.00
     booksAllowed: 10,
     imagesAllowed: 100
   },
@@ -32,7 +32,7 @@ const SUBSCRIPTION_PLANS = {
     name: '20 Book Pack',
     description: 'Publish up to 20 books (3-year validity)',
     priceId: process.env.STRIPE_BUNDLE20_PRICE_ID,
-    price: 59900, // $599.00
+    price: 99900, // $999.00
     booksAllowed: 20,
     imagesAllowed: 200
   },
@@ -40,17 +40,91 @@ const SUBSCRIPTION_PLANS = {
     name: 'Power User',
     description: 'For prolific authors (1-year validity)',
     priceId: process.env.STRIPE_POWERUSER_PRICE_ID,
-    price: 118800, // $1,188.00
-    booksAllowed: 48,
-    imagesAllowed: 480
+    price: 225000, // $2,250.00
+    booksAllowed: 50,
+    imagesAllowed: 500
   },
   agency: {
     name: 'Agency',
     description: 'For publishing agencies (1-year validity)',
     priceId: process.env.STRIPE_AGENCY_PRICE_ID,
-    price: 298800, // $2,988.00
-    booksAllowed: 180,
-    imagesAllowed: 1800
+    price: 350000, // $3,500.00
+    booksAllowed: 100,
+    imagesAllowed: 1000
+  },
+
+  // Ebook plans (50-page limit)
+  eSingle: {
+    name: 'Ebook Single',
+    description: 'Ebook-focused plan with 50-page limit (3-year validity)',
+    priceId: process.env.STRIPE_ESINGLE_PRICE_ID,
+    price: 4600, // $46.00
+    booksAllowed: 1,
+    imagesAllowed: 11,
+    pageLimit: 50
+  },
+  ebundle5: {
+    name: 'Ebook 5 Pack',
+    description: 'Ebook-focused plan for multiple books (3-year validity)',
+    priceId: process.env.STRIPE_EBUNDLE5_PRICE_ID,
+    price: 17400, // $174.00
+    booksAllowed: 5,
+    imagesAllowed: 55,
+    pageLimit: 50
+  },
+  ebundle10: {
+    name: 'Ebook 10 Pack',
+    description: 'Ebook-focused plan for serious authors (3-year validity)',
+    priceId: process.env.STRIPE_EBUNDLE10_PRICE_ID,
+    price: 29900, // $299.00
+    booksAllowed: 10,
+    imagesAllowed: 110,
+    pageLimit: 50
+  },
+  ebundle20: {
+    name: 'Ebook 20 Pack',
+    description: 'Ebook-focused plan for prolific authors (3-year validity)',
+    priceId: process.env.STRIPE_EBUNDLE20_PRICE_ID,
+    price: 49900, // $499.00
+    booksAllowed: 20,
+    imagesAllowed: 220,
+    pageLimit: 50
+  },
+  epoweruser: {
+    name: 'Ebook Power User',
+    description: 'Ebook-focused plan for prolific authors (1-year validity)',
+    priceId: process.env.STRIPE_EPOWERUSER_PRICE_ID,
+    price: 112500, // $1,125.00
+    booksAllowed: 50,
+    imagesAllowed: 550,
+    pageLimit: 50
+  },
+  eagency: {
+    name: 'Ebook Agency',
+    description: 'Ebook-focused plan for publishing agencies (1-year validity)',
+    priceId: process.env.STRIPE_EAGENCY_PRICE_ID,
+    price: 175000, // $1,750.00
+    booksAllowed: 100,
+    imagesAllowed: 1100,
+    pageLimit: 50
+  },
+
+  // Full-service plans
+  fullService: {
+    name: 'Full Service',
+    description: 'Complete publishing package with custom cover designs (3-year validity)',
+    priceId: process.env.STRIPE_FULLSERVICE_PRICE_ID,
+    price: 49900, // $499.00
+    booksAllowed: 1,
+    imagesAllowed: 11
+  },
+  fullServicePlus: {
+    name: 'Full Service Plus',
+    description: 'Complete package with custom covers and KDP setup guidance (3-year validity)',
+    priceId: process.env.STRIPE_FULLSERVICEPLUS_PRICE_ID,
+    price: 59900, // $599.00
+    booksAllowed: 1,
+    imagesAllowed: 11
   },
 
   // Promo plans
@@ -66,7 +140,7 @@ const SUBSCRIPTION_PLANS = {
     name: '5 Book Pack — Promo',
     description: 'Launch offer for 5 books (3-year validity)',
     priceId: process.env.STRIPE_BUNDLE5_PROMO_PRICE_ID,
-    price: 14900, // $149.00
+    price: 24900, // $249.00
     booksAllowed: 5,
     imagesAllowed: 55
   },
@@ -74,7 +148,7 @@ const SUBSCRIPTION_PLANS = {
     name: '10 Book Pack — Promo',
     description: 'Launch offer for 10 books (3-year validity)',
     priceId: process.env.STRIPE_BUNDLE10_PROMO_PRICE_ID,
-    price: 29900, // $299.00
+    price: 39900, // $399.00
     booksAllowed: 10,
     imagesAllowed: 110
   },
@@ -82,7 +156,7 @@ const SUBSCRIPTION_PLANS = {
     name: '20 Book Pack — Promo',
     description: 'Launch offer for 20 books (3-year validity)',
     priceId: process.env.STRIPE_BUNDLE20_PROMO_PRICE_ID,
-    price: 54900, // $549.00
+    price: 69900, // $699.00
     booksAllowed: 20,
     imagesAllowed: 220
   },
@@ -90,17 +164,91 @@ const SUBSCRIPTION_PLANS = {
     name: 'Power User — Promo',
     description: 'Launch offer for prolific authors (1-year validity)',
     priceId: process.env.STRIPE_POWERUSER_PROMO_PRICE_ID,
-    price: 94800, // $948.00
-    booksAllowed: 48,
-    imagesAllowed: 528
+    price: 150000, // $1,500.00
+    booksAllowed: 50,
+    imagesAllowed: 550
   },
   agency_promo: {
     name: 'Agency — Promo',
     description: 'Launch offer for publishing agencies (1-year validity)',
     priceId: process.env.STRIPE_AGENCY_PROMO_PRICE_ID,
-    price: 200000, // $2,000.00
-    booksAllowed: 180,
-    imagesAllowed: 1980
+    price: 250000, // $2,500.00
+    booksAllowed: 100,
+    imagesAllowed: 1100
+  },
+
+  // Ebook promo plans
+  eSingle_promo: {
+    name: 'Ebook Single — Promo',
+    description: 'Launch offer for ebook single (3-year validity, 50-page limit)',
+    priceId: process.env.STRIPE_ESINGLE_PROMO_PRICE_ID,
+    price: 3100, // $31.00
+    booksAllowed: 1,
+    imagesAllowed: 11,
+    pageLimit: 50
+  },
+  ebundle5_promo: {
+    name: 'Ebook 5 Pack — Promo',
+    description: 'Launch offer for ebook 5 pack (3-year validity, 50-page limit)',
+    priceId: process.env.STRIPE_EBUNDLE5_PROMO_PRICE_ID,
+    price: 12400, // $124.00
+    booksAllowed: 5,
+    imagesAllowed: 55,
+    pageLimit: 50
+  },
+  ebundle10_promo: {
+    name: 'Ebook 10 Pack — Promo',
+    description: 'Launch offer for ebook 10 pack (3-year validity, 50-page limit)',
+    priceId: process.env.STRIPE_EBUNDLE10_PROMO_PRICE_ID,
+    price: 19900, // $199.00
+    booksAllowed: 10,
+    imagesAllowed: 110,
+    pageLimit: 50
+  },
+  ebundle20_promo: {
+    name: 'Ebook 20 Pack — Promo',
+    description: 'Launch offer for ebook 20 pack (3-year validity, 50-page limit)',
+    priceId: process.env.STRIPE_EBUNDLE20_PROMO_PRICE_ID,
+    price: 34900, // $349.00
+    booksAllowed: 20,
+    imagesAllowed: 220,
+    pageLimit: 50
+  },
+  epoweruser_promo: {
+    name: 'Ebook Power User — Promo',
+    description: 'Launch offer for ebook power user (1-year validity, 50-page limit)',
+    priceId: process.env.STRIPE_EPOWERUSER_PROMO_PRICE_ID,
+    price: 75000, // $750.00
+    booksAllowed: 50,
+    imagesAllowed: 550,
+    pageLimit: 50
+  },
+  eagency_promo: {
+    name: 'Ebook Agency — Promo',
+    description: 'Launch offer for ebook agency (1-year validity, 50-page limit)',
+    priceId: process.env.STRIPE_EAGENCY_PROMO_PRICE_ID,
+    price: 125000, // $1,250.00
+    booksAllowed: 100,
+    imagesAllowed: 1100,
+    pageLimit: 50
+  },
+
+  // Full-service promo plans
+  fullService_promo: {
+    name: 'Full Service — Promo',
+    description: 'Launch offer for full service package (3-year validity)',
+    priceId: process.env.STRIPE_FULLSERVICE_PROMO_PRICE_ID,
+    price: 44900, // $449.00
+    booksAllowed: 1,
+    imagesAllowed: 11
+  },
+  fullServicePlus_promo: {
+    name: 'Full Service Plus — Promo',
+    description: 'Launch offer for full service plus package (3-year validity)',
+    priceId: process.env.STRIPE_FULLSERVICEPLUS_PROMO_PRICE_ID,
+    price: 54900, // $549.00
+    booksAllowed: 1,
+    imagesAllowed: 11
   },
 
   // Add-ons

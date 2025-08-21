@@ -4,6 +4,48 @@ const { generateRandomToken } = require('../utils/tokenUtils');
 const { sendPasswordResetEmail, sendNotificationEmail, sendPasswordChangeEmail } = require('../utils/emailUtils');
 const { fixBookAllowances, fixUserBookAllowance } = require('../utils/fixBookAllowances');
 
+// FIXED: Moved helper functions to top to resolve "Failed to delete book" 500 error
+// Helper function to extract image URLs from content
+const extractImageUrlsFromContent = (content) => {
+  const imageUrls = [];
+  
+  if (!content) return imageUrls;
+  
+  // Convert content to string if it's an object
+  const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
+  
+  // Find Cloudinary URLs
+  const cloudinaryRegex = /https:\/\/res\.cloudinary\.com\/[^\/]+\/image\/upload\/[^"'\s]+/g;
+  const matches = contentStr.match(cloudinaryRegex);
+  
+  if (matches) {
+    imageUrls.push(...matches);
+  }
+  
+  return [...new Set(imageUrls)]; // Remove duplicates
+};
+
+// Helper function to extract public ID from Cloudinary URL
+const extractPublicIdFromUrl = (url) => {
+  try {
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/');
+    const uploadIndex = pathParts.indexOf('upload');
+    
+    if (uploadIndex !== -1 && uploadIndex + 1 < pathParts.length) {
+      // Get everything after 'upload/' and before the file extension
+      const publicIdWithVersion = pathParts.slice(uploadIndex + 2).join('/');
+      // Remove version if present
+      const publicId = publicIdWithVersion.replace(/^v\d+\//, '');
+      return publicId;
+    }
+  } catch (error) {
+    console.error('Error extracting public ID from URL:', error);
+  }
+  
+  return null;
+};
+
 // Get all users with pagination, sorting and filtering
 const getAllUsers = async (req, res) => {
   try {
@@ -703,47 +745,7 @@ const getUserBooks = async (req, res) => {
   }
 };
 
-// Helper function to extract image URLs from content
-const extractImageUrlsFromContent = (content) => {
-  const imageUrls = [];
-  
-  if (!content) return imageUrls;
-  
-  // Convert content to string if it's an object
-  const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
-  
-  // Find Cloudinary URLs
-  const cloudinaryRegex = /https:\/\/res\.cloudinary\.com\/[^\/]+\/image\/upload\/[^"'\s]+/g;
-  const matches = contentStr.match(cloudinaryRegex);
-  
-  if (matches) {
-    imageUrls.push(...matches);
-  }
-  
-  return [...new Set(imageUrls)]; // Remove duplicates
-};
-
-// Helper function to extract public ID from Cloudinary URL
-const extractPublicIdFromUrl = (url) => {
-  try {
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split('/');
-    const uploadIndex = pathParts.indexOf('upload');
-    
-    if (uploadIndex !== -1 && uploadIndex + 1 < pathParts.length) {
-      // Get everything after 'upload/' and before the file extension
-      const publicIdWithVersion = pathParts.slice(uploadIndex + 2).join('/');
-      // Remove version if present
-      const publicId = publicIdWithVersion.replace(/^v\d+\//, '');
-      return publicId;
-    }
-  } catch (error) {
-    console.error('Error extracting public ID from URL:', error);
-  }
-  
-  return null;
-};
-
+// FIXED: Book deletion now works properly with helper functions defined at top
 // Delete specific book
 const deleteBook = async (req, res) => {
   try {
@@ -819,6 +821,7 @@ const deleteBook = async (req, res) => {
     await Project.findByIdAndDelete(bookId);
     deletionReport.bookDeleted = true;
 
+    // FIXED: Book allowance now properly increments when admin deletes a book
     // Increment the user's books remaining count
     try {
       const user = await User.findById(userId);

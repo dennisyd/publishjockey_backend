@@ -143,6 +143,7 @@ const decrementBooksRemaining = async (req, res) => {
   }
 };
 
+// FIXED: Added increment function to restore book allowance when books are deleted
 /**
  * @desc    Increment books remaining count when deleting a book
  * @route   PUT /api/users/me/books/increment

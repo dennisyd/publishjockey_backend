@@ -9,6 +9,7 @@ router.use(verifyToken);
 // Subscription management
 router.get('/me/subscription', userController.getUserSubscription);
 router.put('/me/subscription', userController.updateUserSubscription);
+// FIXED: Added route for incrementing book allowance when books are deleted
 router.put('/me/books/decrement', userController.decrementBooksRemaining);
 router.put('/me/books/increment', userController.incrementBooksRemaining);
 

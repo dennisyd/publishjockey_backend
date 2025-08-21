@@ -158,7 +158,7 @@ const login = async (req, res) => {
       console.log('User not found with email:', email);
       return res.status(401).json({ 
         success: false, 
-        message: 'Invalid credentials' 
+        message: 'Invalid email or password. Please check your credentials and try again.' 
       });
     }
     
@@ -200,7 +200,7 @@ const login = async (req, res) => {
       console.log('Invalid password for user:', email);
       return res.status(401).json({ 
         success: false, 
-        message: 'Invalid credentials' 
+        message: 'Invalid email or password. Please check your credentials and try again.' 
       });
     }
     

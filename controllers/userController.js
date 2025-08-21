@@ -143,8 +143,55 @@ const decrementBooksRemaining = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Increment books remaining count when deleting a book
+ * @route   PUT /api/users/me/books/increment
+ * @access  Private
+ */
+const incrementBooksRemaining = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Check if we're not exceeding the plan limit
+    if (user.booksRemaining >= user.booksAllowed) {
+      return res.status(400).json({
+        success: false,
+        message: 'Books remaining count cannot exceed plan limit'
+      });
+    }
+    
+    // Increment books remaining
+    user.booksRemaining += 1;
+    await user.save();
+    
+    res.status(200).json({
+      success: true,
+      message: 'Book deleted successfully, allowance updated',
+      booksRemaining: user.booksRemaining,
+      booksAllowed: user.booksAllowed
+    });
+  } catch (error) {
+    console.error('Increment books remaining error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update books remaining count',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getUserSubscription,
   updateUserSubscription,
-  decrementBooksRemaining
+  decrementBooksRemaining,
+  incrementBooksRemaining
 }; 

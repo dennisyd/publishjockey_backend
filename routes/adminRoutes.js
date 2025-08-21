@@ -24,6 +24,10 @@ router.post('/users/:userId/notify', adminController.sendNotification);
 router.get('/users/:userId/books', adminController.getUserBooks);
 router.delete('/users/:userId/books/:bookId', adminController.deleteBook);
 
+// Book allowance management
+router.post('/fix-book-allowances', adminController.fixAllBookAllowances);
+router.post('/users/:userId/fix-book-allowance', adminController.fixUserBookAllowanceAdmin);
+
 // Bulk actions
 router.post('/users/bulk-action', adminController.bulkUserAction);
 

@@ -2,6 +2,7 @@ const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const { generateRandomToken } = require('../utils/tokenUtils');
 const { sendPasswordResetEmail, sendNotificationEmail, sendPasswordChangeEmail } = require('../utils/emailUtils');
+const { fixBookAllowances, fixUserBookAllowance } = require('../utils/fixBookAllowances');
 
 // Get all users with pagination, sorting and filtering
 const getAllUsers = async (req, res) => {
@@ -540,15 +541,28 @@ const deleteUser = async (req, res) => {
       const userProjects = await Project.find({ userId: userId }).lean();
       deletionReport.booksDeleted = userProjects.length;
       
-      // Delete all projects
-      const deleteResult = await Project.deleteMany({ userId: userId });
-      console.log(`Deleted ${deleteResult.deletedCount} projects for user ${userId}`);
-      
-      // Verify deletion
-      const remainingProjects = await Project.find({ userId: userId }).countDocuments();
-      if (remainingProjects > 0) {
-        deletionReport.errors.push(`Failed to delete all projects. ${remainingProjects} projects remain.`);
-      }
+             // Delete all projects
+       const deleteResult = await Project.deleteMany({ userId: userId });
+       console.log(`Deleted ${deleteResult.deletedCount} projects for user ${userId}`);
+       
+       // Update user's books remaining count to full allowance
+       try {
+         const user = await User.findById(userId);
+         if (user) {
+           user.booksRemaining = user.booksAllowed;
+           await user.save();
+           console.log(`Reset books remaining for user ${userId} to full allowance: ${user.booksRemaining}/${user.booksAllowed}`);
+         }
+       } catch (userUpdateError) {
+         console.error('Error updating user books remaining:', userUpdateError);
+         deletionReport.errors.push(`User allowance update error: ${userUpdateError.message}`);
+       }
+       
+       // Verify deletion
+       const remainingProjects = await Project.find({ userId: userId }).countDocuments();
+       if (remainingProjects > 0) {
+         deletionReport.errors.push(`Failed to delete all projects. ${remainingProjects} projects remain.`);
+       }
     } catch (projectError) {
       console.error('Error deleting user projects:', projectError);
       deletionReport.errors.push(`Project deletion error: ${projectError.message}`);
@@ -689,6 +703,47 @@ const getUserBooks = async (req, res) => {
   }
 };
 
+// Helper function to extract image URLs from content
+const extractImageUrlsFromContent = (content) => {
+  const imageUrls = [];
+  
+  if (!content) return imageUrls;
+  
+  // Convert content to string if it's an object
+  const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
+  
+  // Find Cloudinary URLs
+  const cloudinaryRegex = /https:\/\/res\.cloudinary\.com\/[^\/]+\/image\/upload\/[^"'\s]+/g;
+  const matches = contentStr.match(cloudinaryRegex);
+  
+  if (matches) {
+    imageUrls.push(...matches);
+  }
+  
+  return [...new Set(imageUrls)]; // Remove duplicates
+};
+
+// Helper function to extract public ID from Cloudinary URL
+const extractPublicIdFromUrl = (url) => {
+  try {
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/');
+    const uploadIndex = pathParts.indexOf('upload');
+    
+    if (uploadIndex !== -1 && uploadIndex + 1 < pathParts.length) {
+      // Get everything after 'upload/' and before the file extension
+      const publicIdWithVersion = pathParts.slice(uploadIndex + 2).join('/');
+      // Remove version if present
+      const publicId = publicIdWithVersion.replace(/^v\d+\//, '');
+      return publicId;
+    }
+  } catch (error) {
+    console.error('Error extracting public ID from URL:', error);
+  }
+  
+  return null;
+};
+
 // Delete specific book
 const deleteBook = async (req, res) => {
   try {
@@ -729,7 +784,6 @@ const deleteBook = async (req, res) => {
 
     // Extract and delete images from the book content
     try {
-      const ImageUpload = require('../models/ImageUpload');
       const cloudinary = require('cloudinary').v2;
       
       // Configure Cloudinary
@@ -765,6 +819,19 @@ const deleteBook = async (req, res) => {
     await Project.findByIdAndDelete(bookId);
     deletionReport.bookDeleted = true;
 
+    // Increment the user's books remaining count
+    try {
+      const user = await User.findById(userId);
+      if (user && user.booksRemaining < user.booksAllowed) {
+        user.booksRemaining += 1;
+        await user.save();
+        console.log(`Updated books remaining for user ${userId}: ${user.booksRemaining}/${user.booksAllowed}`);
+      }
+    } catch (userUpdateError) {
+      console.error('Error updating user books remaining:', userUpdateError);
+      deletionReport.errors.push(`User allowance update error: ${userUpdateError.message}`);
+    }
+
     // Create audit log
     await AuditLog.create({
       action: 'DELETE_BOOK',
@@ -791,47 +858,6 @@ const deleteBook = async (req, res) => {
       error: error.message
     });
   }
-};
-
-// Helper function to extract image URLs from content
-const extractImageUrlsFromContent = (content) => {
-  const imageUrls = [];
-  
-  if (!content) return imageUrls;
-  
-  // Convert content to string if it's an object
-  const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
-  
-  // Find Cloudinary URLs
-  const cloudinaryRegex = /https:\/\/res\.cloudinary\.com\/[^\/]+\/image\/upload\/[^"'\s]+/g;
-  const matches = contentStr.match(cloudinaryRegex);
-  
-  if (matches) {
-    imageUrls.push(...matches);
-  }
-  
-  return [...new Set(imageUrls)]; // Remove duplicates
-};
-
-// Helper function to extract public ID from Cloudinary URL
-const extractPublicIdFromUrl = (url) => {
-  try {
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split('/');
-    const uploadIndex = pathParts.indexOf('upload');
-    
-    if (uploadIndex !== -1 && uploadIndex + 1 < pathParts.length) {
-      // Get everything after 'upload/' and before the file extension
-      const publicIdWithVersion = pathParts.slice(uploadIndex + 2).join('/');
-      // Remove version if present
-      const publicId = publicIdWithVersion.replace(/^v\d+\//, '');
-      return publicId;
-    }
-  } catch (error) {
-    console.error('Error extracting public ID from URL:', error);
-  }
-  
-  return null;
 };
 
 // Send notification to user
@@ -1152,6 +1178,73 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
+// Fix book allowances for all users
+const fixAllBookAllowances = async (req, res) => {
+  try {
+    console.log('Admin requested book allowance fix for all users');
+    
+    // Run the fix
+    await fixBookAllowances();
+    
+    // Create audit log
+    await AuditLog.create({
+      action: 'FIX_BOOK_ALLOWANCES',
+      performedBy: req.user.userId,
+      details: { scope: 'all_users' }
+    });
+    
+    res.status(200).json({
+      success: true,
+      message: 'Book allowances have been recalculated and fixed for all users'
+    });
+  } catch (error) {
+    console.error('Fix book allowances error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fix book allowances',
+      error: error.message
+    });
+  }
+};
+
+// Fix book allowance for a specific user
+const fixUserBookAllowanceAdmin = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+    
+    console.log(`Admin requested book allowance fix for user: ${userId}`);
+    
+    // Run the fix for specific user
+    await fixUserBookAllowance(userId);
+    
+    // Create audit log
+    await AuditLog.create({
+      action: 'FIX_USER_BOOK_ALLOWANCE',
+      performedBy: req.user.userId,
+      targetUser: userId
+    });
+    
+    res.status(200).json({
+      success: true,
+      message: 'User book allowance has been recalculated and fixed'
+    });
+  } catch (error) {
+    console.error('Fix user book allowance error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fix user book allowance',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserDetails,
@@ -1168,5 +1261,7 @@ module.exports = {
   getAuditLogs,
   getDashboardStats,
   getUserBooks,
-  deleteBook
+  deleteBook,
+  fixAllBookAllowances,
+  fixUserBookAllowanceAdmin
 }; 

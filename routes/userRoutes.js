@@ -10,5 +10,6 @@ router.use(verifyToken);
 router.get('/me/subscription', userController.getUserSubscription);
 router.put('/me/subscription', userController.updateUserSubscription);
 router.put('/me/books/decrement', userController.decrementBooksRemaining);
+router.put('/me/books/increment', userController.incrementBooksRemaining);
 
 module.exports = router; 

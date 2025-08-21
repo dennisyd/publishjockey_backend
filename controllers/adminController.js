@@ -534,9 +534,7 @@ const deleteUser = async (req, res) => {
 
     // 1. Find and delete all projects/books belonging to this user
     try {
-      const mongoose = require('mongoose');
-      const Project = mongoose.models.Project || mongoose.model('Project', 
-        new mongoose.Schema({}), 'projects');
+      const Project = require('../models/Project');
       
       // Find all projects first to get image information
       const userProjects = await Project.find({ userId: userId }).lean();
@@ -663,10 +661,8 @@ const getUserBooks = async (req, res) => {
       });
     }
 
-    // Get user's projects/books
-    const mongoose = require('mongoose');
-    const Project = mongoose.models.Project || mongoose.model('Project', 
-      new mongoose.Schema({}), 'projects');
+    // Get user's projects/books using proper Project model
+    const Project = require('../models/Project');
     
     const books = await Project.find({ userId: userId })
       .select('title createdAt updatedAt _id')
@@ -714,10 +710,8 @@ const deleteBook = async (req, res) => {
       });
     }
 
-    // Get and delete the specific book
-    const mongoose = require('mongoose');
-    const Project = mongoose.models.Project || mongoose.model('Project', 
-      new mongoose.Schema({}), 'projects');
+    // Get and delete the specific book using proper Project model
+    const Project = require('../models/Project');
     
     const book = await Project.findOne({ _id: bookId, userId: userId });
     if (!book) {
@@ -1112,20 +1106,10 @@ const getDashboardStats = async (req, res) => {
     // Get total number of active projects (books)
     let activeBooks = 0;
     try {
-      // Create a model for the 'projects' collection directly
-      const mongoose = require('mongoose');
+      // Use proper Project model
+      const Project = require('../models/Project');
       
-      // Check if model already exists to avoid overwriting
-      let Project;
-      if (mongoose.models.Project) {
-        Project = mongoose.models.Project;
-      } else {
-        // Define a minimal schema - we just need to count documents
-        const projectSchema = new mongoose.Schema({}, { strict: false });
-        Project = mongoose.model('Project', projectSchema, 'projects');
-      }
-      
-      console.log('Project model created');
+      console.log('Project model loaded');
       
       // Count documents
       activeBooks = await Project.countDocuments();

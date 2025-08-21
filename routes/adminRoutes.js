@@ -20,6 +20,10 @@ router.post('/users/:userId/change-role', adminController.changeUserRole);
 router.delete('/users/:userId', adminController.deleteUser);
 router.post('/users/:userId/notify', adminController.sendNotification);
 
+// New routes for book management
+router.get('/users/:userId/books', adminController.getUserBooks);
+router.delete('/users/:userId/books/:bookId', adminController.deleteBook);
+
 // Bulk actions
 router.post('/users/bulk-action', adminController.bulkUserAction);
 

@@ -524,36 +524,114 @@ const deleteUser = async (req, res) => {
         message: 'User not found'
       });
     }
-    
-    // First, check if this user has any Projects and delete them
+
+    const deletionReport = {
+      booksDeleted: 0,
+      imagesDeleted: 0,
+      userDeleted: false,
+      errors: []
+    };
+
+    // 1. Find and delete all projects/books belonging to this user
     try {
-      // This assumes there's a Project model in the same database
       const mongoose = require('mongoose');
       const Project = mongoose.models.Project || mongoose.model('Project', 
-        new mongoose.Schema({}), 'projects'); // Connect to projects collection
+        new mongoose.Schema({}), 'projects');
       
-      // Find and delete all projects belonging to this user - no need to convert again as userId is already validated
+      // Find all projects first to get image information
+      const userProjects = await Project.find({ userId: userId }).lean();
+      deletionReport.booksDeleted = userProjects.length;
+      
+      // Delete all projects
       const deleteResult = await Project.deleteMany({ userId: userId });
       console.log(`Deleted ${deleteResult.deletedCount} projects for user ${userId}`);
+      
+      // Verify deletion
+      const remainingProjects = await Project.find({ userId: userId }).countDocuments();
+      if (remainingProjects > 0) {
+        deletionReport.errors.push(`Failed to delete all projects. ${remainingProjects} projects remain.`);
+      }
     } catch (projectError) {
       console.error('Error deleting user projects:', projectError);
-      // Continue with user deletion even if project deletion fails
+      deletionReport.errors.push(`Project deletion error: ${projectError.message}`);
     }
+
+    // 2. Find and delete all images belonging to this user
+    try {
+      const ImageUpload = require('../models/ImageUpload');
+      const cloudinary = require('cloudinary').v2;
+      
+      // Configure Cloudinary
+      cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET
+      });
+
+      // Find all image uploads for this user
+      const userImages = await ImageUpload.find({ userId: userId }).lean();
+      deletionReport.imagesDeleted = userImages.length;
+
+      // Delete images from Cloudinary
+      for (const image of userImages) {
+        try {
+          await cloudinary.uploader.destroy(image.publicId);
+          console.log(`Deleted image from Cloudinary: ${image.publicId}`);
+        } catch (cloudinaryError) {
+          console.error(`Failed to delete image from Cloudinary: ${image.publicId}`, cloudinaryError);
+          deletionReport.errors.push(`Cloudinary deletion error for ${image.publicId}: ${cloudinaryError.message}`);
+        }
+      }
+
+      // Delete image records from database
+      const imageDeleteResult = await ImageUpload.deleteMany({ userId: userId });
+      console.log(`Deleted ${imageDeleteResult.deletedCount} image records for user ${userId}`);
+
+      // Verify image deletion
+      const remainingImages = await ImageUpload.find({ userId: userId }).countDocuments();
+      if (remainingImages > 0) {
+        deletionReport.errors.push(`Failed to delete all image records. ${remainingImages} records remain.`);
+      }
+    } catch (imageError) {
+      console.error('Error deleting user images:', imageError);
+      deletionReport.errors.push(`Image deletion error: ${imageError.message}`);
+    }
+
+    // 3. Delete user
+    try {
+      await User.findByIdAndDelete(userId);
+      deletionReport.userDeleted = true;
+      console.log(`Deleted user: ${userId}`);
+    } catch (userError) {
+      console.error('Error deleting user:', userError);
+      deletionReport.errors.push(`User deletion error: ${userError.message}`);
+    }
+
+    // 4. Create audit log
+    try {
+      await AuditLog.create({
+        action: 'DELETE_USER',
+        performedBy: req.user.userId || 'system',
+        details: { 
+          deletedUser: userId, 
+          email: user.email,
+          deletionReport: deletionReport
+        }
+      });
+    } catch (auditError) {
+      console.error('Error creating audit log:', auditError);
+      deletionReport.errors.push(`Audit log error: ${auditError.message}`);
+    }
+
+    // 5. Return detailed deletion report
+    const success = deletionReport.userDeleted && deletionReport.errors.length === 0;
     
-    // Delete user
-    await User.findByIdAndDelete(userId);
-    
-    // Create audit log
-    await AuditLog.create({
-      action: 'DELETE_USER',
-      performedBy: req.user.userId || 'system',
-      details: { deletedUser: userId, email: user.email }
+    res.status(success ? 200 : 207).json({
+      success: success,
+      message: success ? 'User and all associated data deleted successfully' : 'User deletion completed with some errors',
+      deletionReport: deletionReport
     });
-    
-    res.status(200).json({
-      success: true,
-      message: 'User deleted successfully'
-    });
+
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({
@@ -562,6 +640,204 @@ const deleteUser = async (req, res) => {
       error: error.message
     });
   }
+};
+
+// Get user books
+const getUserBooks = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId || userId === 'undefined') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID provided'
+      });
+    }
+
+    // Verify user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Get user's projects/books
+    const mongoose = require('mongoose');
+    const Project = mongoose.models.Project || mongoose.model('Project', 
+      new mongoose.Schema({}), 'projects');
+    
+    const books = await Project.find({ userId: userId })
+      .select('title createdAt updatedAt _id')
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      books: books,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
+
+  } catch (error) {
+    console.error('Get user books error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get user books',
+      error: error.message
+    });
+  }
+};
+
+// Delete specific book
+const deleteBook = async (req, res) => {
+  try {
+    const { userId, bookId } = req.params;
+    
+    if (!userId || !bookId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID or book ID provided'
+      });
+    }
+
+    // Verify user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Get and delete the specific book
+    const mongoose = require('mongoose');
+    const Project = mongoose.models.Project || mongoose.model('Project', 
+      new mongoose.Schema({}), 'projects');
+    
+    const book = await Project.findOne({ _id: bookId, userId: userId });
+    if (!book) {
+      return res.status(404).json({
+        success: false,
+        message: 'Book not found or does not belong to this user'
+      });
+    }
+
+    const deletionReport = {
+      bookDeleted: false,
+      imagesDeleted: 0,
+      errors: []
+    };
+
+    // Extract and delete images from the book content
+    try {
+      const ImageUpload = require('../models/ImageUpload');
+      const cloudinary = require('cloudinary').v2;
+      
+      // Configure Cloudinary
+      cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET
+      });
+
+      // Extract image URLs from book content
+      const imageUrls = extractImageUrlsFromContent(book.content);
+      
+      for (const imageUrl of imageUrls) {
+        try {
+          // Extract public ID from URL
+          const publicId = extractPublicIdFromUrl(imageUrl);
+          if (publicId) {
+            await cloudinary.uploader.destroy(publicId);
+            console.log(`Deleted image from Cloudinary: ${publicId}`);
+            deletionReport.imagesDeleted++;
+          }
+        } catch (cloudinaryError) {
+          console.error(`Failed to delete image: ${imageUrl}`, cloudinaryError);
+          deletionReport.errors.push(`Image deletion error: ${cloudinaryError.message}`);
+        }
+      }
+    } catch (imageError) {
+      console.error('Error processing images:', imageError);
+      deletionReport.errors.push(`Image processing error: ${imageError.message}`);
+    }
+
+    // Delete the book
+    await Project.findByIdAndDelete(bookId);
+    deletionReport.bookDeleted = true;
+
+    // Create audit log
+    await AuditLog.create({
+      action: 'DELETE_BOOK',
+      performedBy: req.user.userId || 'system',
+      targetUser: userId,
+      details: { 
+        bookId: bookId,
+        bookTitle: book.title,
+        deletionReport: deletionReport
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Book deleted successfully',
+      deletionReport: deletionReport
+    });
+
+  } catch (error) {
+    console.error('Delete book error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete book',
+      error: error.message
+    });
+  }
+};
+
+// Helper function to extract image URLs from content
+const extractImageUrlsFromContent = (content) => {
+  const imageUrls = [];
+  
+  if (!content) return imageUrls;
+  
+  // Convert content to string if it's an object
+  const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
+  
+  // Find Cloudinary URLs
+  const cloudinaryRegex = /https:\/\/res\.cloudinary\.com\/[^\/]+\/image\/upload\/[^"'\s]+/g;
+  const matches = contentStr.match(cloudinaryRegex);
+  
+  if (matches) {
+    imageUrls.push(...matches);
+  }
+  
+  return [...new Set(imageUrls)]; // Remove duplicates
+};
+
+// Helper function to extract public ID from Cloudinary URL
+const extractPublicIdFromUrl = (url) => {
+  try {
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/');
+    const uploadIndex = pathParts.indexOf('upload');
+    
+    if (uploadIndex !== -1 && uploadIndex + 1 < pathParts.length) {
+      // Get everything after 'upload/' and before the file extension
+      const publicIdWithVersion = pathParts.slice(uploadIndex + 2).join('/');
+      // Remove version if present
+      const publicId = publicIdWithVersion.replace(/^v\d+\//, '');
+      return publicId;
+    }
+  } catch (error) {
+    console.error('Error extracting public ID from URL:', error);
+  }
+  
+  return null;
 };
 
 // Send notification to user
@@ -906,5 +1182,7 @@ module.exports = {
   sendNotification,
   bulkUserAction,
   getAuditLogs,
-  getDashboardStats
+  getDashboardStats,
+  getUserBooks,
+  deleteBook
 }; 

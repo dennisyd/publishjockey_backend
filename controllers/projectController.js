@@ -3,6 +3,7 @@ const User = require('../models/User');
 const mongoose = require('mongoose');
 const config = require('../config/config');
 const { updateUserImageCount } = require('../utils/imageScanner');
+const { getLocalizedBookStructure } = require('../utils/bookStructureLocalization');
 
 /**
  * Get all projects
@@ -146,6 +147,14 @@ exports.createProject = async (req, res) => {
       projectData.userId = userId; // Add userId field for export-backend compatibility
     }
     // Otherwise, leave owner as null (we've made it optional in the model)
+    
+    // Get the language from the request body or default to English
+    const language = req.body.language || 'en';
+    console.log('Creating project with language:', language);
+    
+    // Use localized book structure based on the language
+    const localizedStructure = getLocalizedBookStructure(language);
+    projectData.structure = localizedStructure;
     
     console.log('Creating project with data:', projectData);
     

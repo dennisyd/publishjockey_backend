@@ -61,11 +61,12 @@ const ProjectSchema = new Schema({
   structure: {
     type: Object,
     default: {
-      front: ["Title Page", "Copyright", "Dedication", "Acknowledgments"],
+      front: ["Title Page", "Copyright", "Dedication", "Acknowledgments", "Foreword", "Introduction"],
       main: ["Chapter 1", "Chapter 2", "Chapter 3"],
-      back: ["About the Author"]
+      back: ["About the Author", "Appendix", "References", "Bibliography", "Index", "Glossary"]
     }
   }
+  // Yancy Dennis - Updated structure to match frontend and include all default sections
 }, {
   timestamps: true
 });

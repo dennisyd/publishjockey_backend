@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const { getLocalizedBookStructure } = require('../utils/bookStructureLocalization');
 
 const ProjectSchema = new Schema({
   title: {
@@ -60,11 +61,7 @@ const ProjectSchema = new Schema({
   },
   structure: {
     type: Object,
-    default: {
-      front: ["Title Page", "Copyright", "Dedication", "Acknowledgments", "Foreword", "Introduction"],
-      main: ["Chapter 1", "Chapter 2", "Chapter 3"],
-      back: ["About the Author", "Appendix", "References", "Bibliography", "Index", "Glossary"]
-    }
+    default: () => getLocalizedBookStructure('en') // Default to English structure
   }
   // Yancy Dennis - Updated structure to match frontend and include all default sections
 }, {

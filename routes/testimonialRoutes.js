@@ -8,7 +8,7 @@ router.post('/', testimonialController.submitTestimonial);
 
 // Public: get approved testimonials, Admin: get all testimonials
 router.get('/', (req, res, next) => {
-  // If ?approved=true, show only approved; else, show all (admin)
+  // If ?approved=true, show only approved (public access)
   if (req.query.approved === 'true') {
     return testimonialController.getApprovedTestimonials(req, res, next);
   }

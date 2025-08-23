@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const testimonialController = require('../controllers/testimonialController');
-const { verifyToken, requireAdmin } = require('../middleware/auth');
+const { verifyToken, verifyTokenStrict, requireAdmin } = require('../middleware/auth');
 
 // Public: submit testimonial
 router.post('/', testimonialController.submitTestimonial);
@@ -35,12 +35,12 @@ router.get('/', (req, res, next) => {
 });
 
 // Admin: update testimonial
-router.patch('/:id', verifyToken, requireAdmin, testimonialController.updateTestimonial);
+router.patch('/:id', verifyTokenStrict, requireAdmin, testimonialController.updateTestimonial);
 
 // Admin: approve testimonial
-router.patch('/:id/approve', verifyToken, requireAdmin, testimonialController.approveTestimonial);
+router.patch('/:id/approve', verifyTokenStrict, requireAdmin, testimonialController.approveTestimonial);
 
 // Admin: delete testimonial
-router.delete('/:id', verifyToken, requireAdmin, testimonialController.deleteTestimonial);
+router.delete('/:id', verifyTokenStrict, requireAdmin, testimonialController.deleteTestimonial);
 
 module.exports = router; 

@@ -198,10 +198,14 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-// Apply anti-replay protection to all routes EXCEPT auth routes, project routes and image routes
+// Apply anti-replay protection to all routes EXCEPT auth routes, project routes, image routes, and admin routes
 app.use((req, res, next) => {
-  // Skip anti-replay protection for auth routes, project routes and image routes
-  if (req.path.startsWith('/api/auth/') || req.path.startsWith('/api/projects') || req.path.startsWith('/api/images')) {
+  // Skip anti-replay protection for auth routes, project routes, image routes, admin routes, and testimonial routes
+  if (req.path.startsWith('/api/auth/') || 
+      req.path.startsWith('/api/projects') || 
+      req.path.startsWith('/api/images') ||
+      req.path.startsWith('/api/admin/') ||
+      req.path.startsWith('/api/testimonials')) {
     return next();
   }
   validateNonce(req, res, next);

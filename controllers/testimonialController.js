@@ -38,11 +38,9 @@ exports.updateTestimonial = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, email, text, avatarUrl } = req.body;
-    console.log('Attempting to update testimonial with ID:', id);
     
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      console.log('Invalid ObjectId format:', id);
       return res.status(400).json({ error: 'Invalid testimonial ID format' });
     }
     
@@ -53,14 +51,11 @@ exports.updateTestimonial = async (req, res) => {
     );
     
     if (!testimonial) {
-      console.log('Testimonial not found with ID:', id);
       return res.status(404).json({ error: 'Testimonial not found' });
     }
     
-    console.log('Successfully updated testimonial:', id);
     res.json({ message: 'Testimonial updated successfully', testimonial });
   } catch (err) {
-    console.error('Error updating testimonial:', err);
     res.status(400).json({ error: err.message });
   }
 };
@@ -69,24 +64,19 @@ exports.updateTestimonial = async (req, res) => {
 exports.approveTestimonial = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('Attempting to approve testimonial with ID:', id);
     
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      console.log('Invalid ObjectId format:', id);
       return res.status(400).json({ error: 'Invalid testimonial ID format' });
     }
     
     const testimonial = await Testimonial.findByIdAndUpdate(id, { approved: true }, { new: true });
     if (!testimonial) {
-      console.log('Testimonial not found with ID:', id);
       return res.status(404).json({ error: 'Testimonial not found' });
     }
     
-    console.log('Successfully approved testimonial:', id);
     res.json({ message: 'Testimonial approved', testimonial });
   } catch (err) {
-    console.error('Error approving testimonial:', err);
     res.status(400).json({ error: err.message });
   }
 };
@@ -95,24 +85,19 @@ exports.approveTestimonial = async (req, res) => {
 exports.deleteTestimonial = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('Attempting to delete testimonial with ID:', id);
     
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      console.log('Invalid ObjectId format:', id);
       return res.status(400).json({ error: 'Invalid testimonial ID format' });
     }
     
     const testimonial = await Testimonial.findByIdAndDelete(id);
     if (!testimonial) {
-      console.log('Testimonial not found with ID:', id);
       return res.status(404).json({ error: 'Testimonial not found' });
     }
     
-    console.log('Successfully deleted testimonial:', id);
     res.json({ message: 'Testimonial deleted' });
   } catch (err) {
-    console.error('Error deleting testimonial:', err);
     res.status(400).json({ error: err.message });
   }
 }; 

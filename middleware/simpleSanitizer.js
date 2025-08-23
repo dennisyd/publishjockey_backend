@@ -111,31 +111,10 @@ const sanitizeObject = (obj) => {
  * Express middleware to sanitize request body
  */
 const simpleSanitizerMiddleware = (req, res, next) => {
-  console.log(`🛡️ Sanitizer middleware hit: ${req.method} ${req.path}`);
-  
   if (req.body) {
     try {
-      // Log original content for debugging (only for title/content fields)
-      if (req.body.title || req.body.content) {
-        console.log('🚨 SANITIZING CONTENT:', {
-          method: req.method,
-          path: req.path,
-          originalTitle: req.body.title,
-          originalContent: req.body.content
-        });
-      }
-      
       // Sanitize the request body
       req.body = sanitizeObject(req.body);
-      
-      // Log sanitized content
-      if (req.body.title || req.body.content) {
-        console.log('✅ AFTER SANITIZATION:', {
-          sanitizedTitle: req.body.title,
-          sanitizedContent: req.body.content
-        });
-      }
-      
       next();
     } catch (error) {
       console.error('Sanitization error:', error);
@@ -143,7 +122,6 @@ const simpleSanitizerMiddleware = (req, res, next) => {
       next();
     }
   } else {
-    console.log(`🔹 No body to sanitize: ${req.method} ${req.path}`);
     next();
   }
 };

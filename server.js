@@ -22,8 +22,11 @@ const projectRoutes = require('./routes/projectRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
 const imageRoutes = require('./routes/imageRoutes');
 const securityRoutes = require('./routes/securityRoutes');
+const affiliateRoutes = require('./routes/affiliateRoutes');
+const adminAffiliateRoutes = require('./routes/adminAffiliateRoutes');
 const { validateNonce, clearNonceStore, getNonceStoreStats } = require('./middleware/antiReplay');
 const { validateCsrfToken, generateCsrfToken } = require('./middleware/csrf');
+const { trackReferralClick, trackReferralRegistration, trackReferralConversion } = require('./middleware/referralTracking');
 
 // Create Express app
 const app = express();
@@ -253,14 +256,24 @@ console.log('🛡️ CSRF protection enabled for state-changing operations');
 console.log('🔗 Registering routes...');
 app.use('/api', splitDoctorRoutes);
 app.use('/api/testimonials', testimonialRoutes);
-app.use('/api/auth', authRoutes);
+
+// Referral click tracking route
+app.get('/api/referral/:affiliateCode', trackReferralClick, (req, res) => {
+  // Redirect to the main site with the affiliate code
+  const affiliateCode = req.params.affiliateCode;
+  res.redirect(`/?ref=${affiliateCode}`);
+});
+
+app.use('/api/auth', trackReferralRegistration, authRoutes);
 app.use('/api/admin', verifyTokenStrict, requireAdmin, adminRoutes);
 app.use('/api/admin/title-changes', titleChangeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
-app.use('/api/stripe', stripeRoutes);
+app.use('/api/stripe', trackReferralConversion, stripeRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/security', securityRoutes);
+app.use('/api/affiliates', affiliateRoutes);
+app.use('/api/admin', adminAffiliateRoutes);
 console.log('✅ All routes registered');
 
 // Add a specific route for file downloads to make absolutely sure it's registered

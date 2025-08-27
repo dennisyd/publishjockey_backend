@@ -4,12 +4,12 @@ const Affiliate = require('../models/Affiliate');
 const Commission = require('../models/Commission');
 const Referral = require('../models/Referral');
 const User = require('../models/User');
-const { auth, admin } = require('../middleware/auth');
+const { verifyToken, requireAdmin } = require('../middleware/auth');
 const paymentService = require('../services/paymentService');
 const scheduledPayoutService = require('../services/scheduledPayoutService');
 
 // Apply admin middleware to all routes
-router.use(auth, admin);
+router.use(verifyToken, requireAdmin);
 
 /**
  * GET /admin/affiliates/stats

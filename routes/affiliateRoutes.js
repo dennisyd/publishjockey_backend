@@ -4,12 +4,11 @@ const Affiliate = require('../models/Affiliate');
 const Referral = require('../models/Referral');
 const Commission = require('../models/Commission');
 const User = require('../models/User');
-const auth = require('../middleware/auth');
-const admin = require('../middleware/admin');
+const { verifyToken, requireAdmin } = require('../middleware/auth');
 const paymentService = require('../services/paymentService');
 
 // Apply auth middleware to all routes
-router.use(auth);
+router.use(verifyToken);
 
 // @route   POST /api/affiliates/register
 // @desc    Register as an affiliate
@@ -311,7 +310,7 @@ router.get('/tracking-link/:code', async (req, res) => {
 // @route   GET /api/affiliates/admin/all
 // @desc    Get all affiliates (admin only)
 // @access  Admin
-router.get('/admin/all', admin, async (req, res) => {
+router.get('/admin/all', requireAdmin, async (req, res) => {
   try {
     const { page = 1, limit = 20, status } = req.query;
     
@@ -348,7 +347,7 @@ router.get('/admin/all', admin, async (req, res) => {
 // @route   PUT /api/affiliates/admin/:id/approve
 // @desc    Approve affiliate (admin only)
 // @access  Admin
-router.put('/admin/:id/approve', admin, async (req, res) => {
+router.put('/admin/:id/approve', requireAdmin, async (req, res) => {
   try {
     const affiliate = await Affiliate.findById(req.params.id);
     if (!affiliate) {
@@ -381,7 +380,7 @@ router.put('/admin/:id/approve', admin, async (req, res) => {
 // @route   PUT /api/affiliates/admin/:id/suspend
 // @desc    Suspend affiliate (admin only)
 // @access  Admin
-router.put('/admin/:id/suspend', admin, async (req, res) => {
+router.put('/admin/:id/suspend', requireAdmin, async (req, res) => {
   try {
     const { reason } = req.body;
     
@@ -450,7 +449,7 @@ router.post('/setup-stripe-connect', async (req, res) => {
 // @route   POST /api/affiliates/process-payout
 // @desc    Process commission payout (admin only)
 // @access  Admin
-router.post('/process-payout', admin, async (req, res) => {
+router.post('/process-payout', requireAdmin, async (req, res) => {
   try {
     const { commissionId } = req.body;
     

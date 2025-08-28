@@ -37,7 +37,11 @@
     "nodemailer": "^6.10.1",
     "stripe": "^18.4.0",
     "turndown": "^7.2.0",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "node-cron": "^3.0.3",
+    "referral-codes": "^2.4.0",
+    "commission-calculator": "^1.0.0",
+    "tracking-pixel": "^1.0.0"
   },
   "devDependencies": {
     "depcheck": "^1.4.5",

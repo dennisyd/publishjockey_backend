@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { generate } = require('referral-codes');
 
 const AffiliateSchema = new mongoose.Schema({
   // Basic affiliate information
@@ -15,7 +16,14 @@ const AffiliateSchema = new mongoose.Schema({
     required: true,
     unique: true,
     uppercase: true,
-    trim: true
+    trim: true,
+    default: function() {
+      // Generate a unique 8-character referral code using referral-codes package
+      return generate({
+        pattern: '########',
+        length: 8
+      })[0];
+    }
   },
   
   // Commission rates (can be customized per affiliate)

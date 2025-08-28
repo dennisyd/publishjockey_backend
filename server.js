@@ -346,9 +346,7 @@ const start = async () => {
     });
     console.log('Connected to MongoDB');
     
-    // Initialize scheduled payout service
-    const scheduledPayoutService = require('./services/scheduledPayoutService');
-    scheduledPayoutService.scheduleMonthlyPayouts();
+
     
     // Simple HTTP server without HTTPS
     app.listen(PORT, () => {

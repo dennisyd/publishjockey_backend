@@ -1,7 +1,6 @@
 const Commission = require('../models/Commission');
 const Affiliate = require('../models/Affiliate');
 const paymentService = require('./paymentService');
-const cron = require('node-cron');
 
 class ScheduledPayoutService {
   /**
@@ -154,26 +153,6 @@ class ScheduledPayoutService {
     return nextPayout;
   }
 
-  /**
-   * Schedule monthly payouts using node-cron
-   * Runs on the 15th of every month at 9:00 AM
-   */
-  scheduleMonthlyPayouts() {
-    // Schedule payout processing for the 15th of every month at 9:00 AM
-    cron.schedule('0 9 15 * *', async () => {
-      console.log('🕐 Running scheduled monthly payouts...');
-      try {
-        await this.processMonthlyPayouts();
-        console.log('✅ Scheduled monthly payouts completed successfully');
-      } catch (error) {
-        console.error('❌ Scheduled monthly payouts failed:', error);
-      }
-    }, {
-      timezone: 'America/New_York'
-    });
-    
-    console.log('📅 Monthly payouts scheduled for 15th of every month at 9:00 AM EST');
-  }
 }
 
 module.exports = new ScheduledPayoutService();

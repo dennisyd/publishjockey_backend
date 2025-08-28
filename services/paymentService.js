@@ -1,5 +1,4 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const CommissionCalculator = require('commission-calculator');
 
 class PaymentService {
   /**

@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { generate } = require('referral-codes');
 
 const AffiliateSchema = new mongoose.Schema({
   // Basic affiliate information
@@ -18,11 +17,13 @@ const AffiliateSchema = new mongoose.Schema({
     uppercase: true,
     trim: true,
     default: function() {
-      // Generate a unique 8-character referral code using referral-codes package
-      return generate({
-        pattern: '########',
-        length: 8
-      })[0];
+      // Generate a unique 8-character referral code
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < 8; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
     }
   },
   

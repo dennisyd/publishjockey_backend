@@ -10,7 +10,7 @@ const getUserSubscription = async (req, res) => {
   try {
     const userId = req.user.userId;
     
-    const user = await User.findById(userId).select('subscription booksRemaining booksAllowed subscriptionExpires');
+    const user = await User.findById(userId).select('subscription booksRemaining booksAllowed subscriptionExpires imagesAllowed pageLimit');
     
     if (!user) {
       return res.status(404).json({
@@ -22,8 +22,11 @@ const getUserSubscription = async (req, res) => {
     res.status(200).json({
       success: true,
       subscription: user.subscription,
+      subscriptionType: user.subscription, // Also include as subscriptionType for frontend compatibility
       booksRemaining: user.booksRemaining,
       booksAllowed: user.booksAllowed,
+      imagesAllowed: user.imagesAllowed,
+      pageLimit: user.pageLimit,
       subscriptionExpires: user.subscriptionExpires
     });
   } catch (error) {

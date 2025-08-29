@@ -203,13 +203,27 @@ const updateUserInfo = async (req, res) => {
     
     // Update user
     console.log('🔍 Updating user in database...');
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-password -resetPasswordToken -resetPasswordExpires -verificationToken -verificationTokenExpires');
+    const user = await User.findById(userId);
     
-    console.log('✅ User updated in database');
+    // Apply updates to the user object
+    Object.assign(user, updateData);
+    
+    // Save the user (this will trigger pre-save hooks)
+    const updatedUser = await user.save();
+    
+    // Remove sensitive fields from response
+    const sanitizedUser = updatedUser.toObject();
+    delete sanitizedUser.password;
+    delete sanitizedUser.resetPasswordToken;
+    delete sanitizedUser.resetPasswordExpires;
+    delete sanitizedUser.verificationToken;
+    delete sanitizedUser.verificationTokenExpires;
+    
+    console.log('✅ User updated in database with limits:', {
+      booksAllowed: updatedUser.booksAllowed,
+      imagesAllowed: updatedUser.imagesAllowed,
+      pageLimit: updatedUser.pageLimit
+    });
     
     // Create audit log
     console.log('🔍 Creating audit log...');
@@ -230,7 +244,7 @@ const updateUserInfo = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'User updated successfully',
-      user: updatedUser
+      user: sanitizedUser
     });
   } catch (error) {
     console.error('❌ UPDATE USER ERROR:', error);

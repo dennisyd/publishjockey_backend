@@ -8,7 +8,8 @@ const {
   getProject,
   createProject,
   updateProject,
-  deleteProject
+  deleteProject,
+  getProjectWordCount
 } = require('../controllers/projectController');
 
 // Apply regular token verification to all project routes
@@ -25,5 +26,9 @@ router
   .get(getProject)
   .put(updateProject)
   .delete(deleteProject);
+
+router
+  .route('/:id/wordcount')
+  .get(getProjectWordCount);
 
 module.exports = router; 

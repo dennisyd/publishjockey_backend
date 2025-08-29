@@ -128,6 +128,11 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: null // null means unlimited pages
   },
+  // Word limit tracking (for ebook subscriptions)
+  wordLimit: {
+    type: Number,
+    default: null // null means unlimited words
+  },
   // Promo redemption flags (server-side enforcement)
   promoRedemptions: {
     type: Object,
@@ -268,10 +273,43 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
   this.imagesAllowed = imagePlanLimits[this.subscription] || 2; // Default to 2 for free plan
 };
 
-// Method to update page limits based on subscription
+// Method to update page and word limits based on subscription
 UserSchema.methods.updatePageLimits = function() {
   const pageLimitPlans = {
-    // Standard plans (unlimited pages)
+    // Standard plans (unlimited pages, except free gets 12 pages)
+    'free': 12,
+    'beta': null,
+    'single': null,
+    'single_promo': null,
+    'bundle5': null,
+    'bundle5_promo': null,
+    'bundle10': null,
+    'bundle10_promo': null,
+    'bundle20': null,
+    'bundle20_promo': null,
+    'poweruser': null,
+    'poweruser_promo': null,
+    'agency': null,
+    'agency_promo': null,
+    'additional': null,
+    'custom': null,
+    // Ebook plans (unlimited pages but word limited)
+    'eSingle': null,
+    'eSingle_promo': null,
+    'ebundle5_promo': null,
+    'ebundle10_promo': null,
+    'ebundle20_promo': null,
+    'epoweruser_promo': null,
+    'eagency_promo': null,
+    // Full service plans (unlimited pages)
+    'fullService_promo': null,
+    'fullServicePlus_promo': null,
+    // Add-ons (no page limit change)
+    'images_addon_100': null
+  };
+
+  const wordLimitPlans = {
+    // Standard plans (unlimited words)
     'free': null,
     'beta': null,
     'single': null,
@@ -288,22 +326,23 @@ UserSchema.methods.updatePageLimits = function() {
     'agency_promo': null,
     'additional': null,
     'custom': null,
-    // Ebook plans (50-page limit)
-    'eSingle': 50,
-    'eSingle_promo': 50,
-    'ebundle5_promo': 50,
-    'ebundle10_promo': 50,
-    'ebundle20_promo': 50,
-    'epoweruser_promo': 50,
-    'eagency_promo': 50,
-    // Full service plans (unlimited pages)
+    // Ebook plans (10,000 word limit)
+    'eSingle': 10000,
+    'eSingle_promo': 10000,
+    'ebundle5_promo': 10000,
+    'ebundle10_promo': 10000,
+    'ebundle20_promo': 10000,
+    'epoweruser_promo': 10000,
+    'eagency_promo': 10000,
+    // Full service plans (unlimited words)
     'fullService_promo': null,
     'fullServicePlus_promo': null,
-    // Add-ons (no page limit change)
+    // Add-ons (no word limit change)
     'images_addon_100': null
   };
 
   this.pageLimit = pageLimitPlans[this.subscription];
+  this.wordLimit = wordLimitPlans[this.subscription];
 };
 
 // Method to get total image limit

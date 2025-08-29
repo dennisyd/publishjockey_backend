@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const config = require('../config/config');
 const { updateUserImageCount } = require('../utils/imageScanner');
 const { getLocalizedBookStructure } = require('../utils/bookStructureLocalization');
+const { validateWordLimit } = require('../utils/wordCounter');
 
 /**
  * Get all projects
@@ -259,6 +260,32 @@ exports.updateProject = async (req, res) => {
     const originalTitle = project.title;
     const willChangeTitle = typeof req.body.title === 'string' && req.body.title.trim() !== originalTitle;
 
+    // Check word limit for ebook subscriptions if content is being updated
+    if (req.body.content && req.user && req.user.userId) {
+      try {
+        const user = await User.findById(req.user.userId);
+        if (user && user.wordLimit) {
+          const contentToCheck = { ...project.content, ...req.body.content };
+          const validation = validateWordLimit(contentToCheck, user.wordLimit);
+          
+          if (!validation.isValid) {
+            return res.status(400).json({
+              success: false,
+              message: `Content exceeds word limit of ${user.wordLimit} words. Current content: ${validation.wordCount} words.`,
+              data: {
+                wordCount: validation.wordCount,
+                wordLimit: user.wordLimit,
+                wordsOver: validation.wordCount - user.wordLimit
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error checking word limit:', error);
+        // Continue with update even if word limit check fails
+      }
+    }
+
     // Update the project
     project = await Project.findByIdAndUpdate(
       req.params.id, 
@@ -376,6 +403,57 @@ exports.deleteProject = async (req, res) => {
     });
   } catch (error) {
     console.error('Error deleting project:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get project word count information
+ * @route GET /api/projects/:id/wordcount
+ * @access Private
+ */
+exports.getProjectWordCount = async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid project ID'
+      });
+    }
+
+    const project = await Project.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    // Get user's word limit
+    let wordLimit = null;
+    if (req.user && req.user.userId) {
+      const user = await User.findById(req.user.userId);
+      wordLimit = user ? user.wordLimit : null;
+    }
+
+    const validation = validateWordLimit(project.content, wordLimit);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        wordCount: validation.wordCount,
+        wordLimit: validation.wordLimit,
+        wordsRemaining: validation.wordsRemaining,
+        isValid: validation.isValid
+      }
+    });
+  } catch (error) {
+    console.error('Error getting project word count:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',

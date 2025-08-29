@@ -217,13 +217,16 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
       'images_addon_100': 1 // Image addon doesn't change book count
     };
   
+  const oldBooksAllowed = this.booksAllowed;
   this.booksAllowed = planLimits[this.subscription] || 1;
   
-  // If this is a new subscription or upgrade, set remaining books to the full allowance
-  // If it's a downgrade, make sure we don't exceed the new plan's limit
-  if (this.booksRemaining > this.booksAllowed) {
+  // If this is a new user or subscription change, reset to full allowance
+  if (this.isNew || oldBooksAllowed !== this.booksAllowed) {
+    // For admin subscription changes, always reset to full allowance
     this.booksRemaining = this.booksAllowed;
-  } else if (this.isNew || this.booksRemaining === 0) {
+    console.log(`📚 Books allowance updated: ${oldBooksAllowed} → ${this.booksAllowed}, remaining reset to ${this.booksRemaining}`);
+  } else if (this.booksRemaining > this.booksAllowed) {
+    // Only reduce if current remaining exceeds new allowance
     this.booksRemaining = this.booksAllowed;
   }
   // Otherwise keep the current remaining count

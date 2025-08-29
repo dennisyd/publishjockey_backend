@@ -161,26 +161,34 @@ const getUserDetails = async (req, res) => {
 // Update user information
 const updateUserInfo = async (req, res) => {
   try {
+    console.log('🔍 UPDATE USER START:', { userId: req.params.userId, body: req.body });
+    
     const { userId } = req.params;
     const { name, email, role, subscription } = req.body;
     
     // Find user
+    console.log('🔍 Finding user...');
     const user = await User.findById(userId);
     
     if (!user) {
+      console.log('❌ User not found:', userId);
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
+    console.log('✅ User found:', user.email);
     
     // Prepare update data
+    console.log('🔍 Preparing update data...');
     const updateData = {};
     if (name) updateData.name = name;
     if (email && email !== user.email) {
+      console.log('🔍 Checking if email is already in use...');
       // Check if email is already in use
       const existingUser = await User.findOne({ email, _id: { $ne: userId } });
       if (existingUser) {
+        console.log('❌ Email already in use:', email);
         return res.status(400).json({
           success: false,
           message: 'Email already in use'
@@ -191,32 +199,46 @@ const updateUserInfo = async (req, res) => {
     if (role) updateData.role = role;
     if (subscription) updateData.subscription = subscription;
     
+    console.log('🔍 Update data prepared:', updateData);
+    
     // Update user
+    console.log('🔍 Updating user in database...');
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       updateData,
       { new: true, runValidators: true }
     ).select('-password -resetPasswordToken -resetPasswordExpires -verificationToken -verificationTokenExpires');
     
-    // Create audit log
-    await AuditLog.create({
-      action: 'UPDATE_USER',
-      performedBy: req.user.userId,
-      targetUser: userId,
-      details: updateData
-    });
+    console.log('✅ User updated in database');
     
+    // Create audit log
+    console.log('🔍 Creating audit log...');
+    try {
+      await AuditLog.create({
+        action: 'UPDATE_USER',
+        performedBy: req.user.userId,
+        targetUser: userId,
+        details: updateData
+      });
+      console.log('✅ Audit log created');
+    } catch (auditError) {
+      console.error('Error creating audit log:', auditError);
+      // Don't fail the entire operation for audit log issues
+    }
+    
+    console.log('✅ UPDATE USER SUCCESS');
     res.status(200).json({
       success: true,
       message: 'User updated successfully',
       user: updatedUser
     });
   } catch (error) {
-    console.error('Update user error:', error);
+    console.error('❌ UPDATE USER ERROR:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update user',
-      error: error.message
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
@@ -749,9 +771,12 @@ const getUserBooks = async (req, res) => {
 // Delete specific book
 const deleteBook = async (req, res) => {
   try {
+    console.log('🔍 DELETE BOOK START:', { userId: req.params.userId, bookId: req.params.bookId });
+    
     const { userId, bookId } = req.params;
     
     if (!userId || !bookId) {
+      console.log('❌ Invalid parameters:', { userId, bookId });
       return res.status(400).json({
         success: false,
         message: 'Invalid user ID or book ID provided'
@@ -759,24 +784,30 @@ const deleteBook = async (req, res) => {
     }
 
     // Verify user exists
+    console.log('🔍 Verifying user exists...');
     const user = await User.findById(userId);
     if (!user) {
+      console.log('❌ User not found:', userId);
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
+    console.log('✅ User found:', user.email);
 
     // Get and delete the specific book using proper Project model
+    console.log('🔍 Finding book...');
     const Project = require('../models/Project');
     
     const book = await Project.findOne({ _id: bookId, userId: userId });
     if (!book) {
+      console.log('❌ Book not found:', { bookId, userId });
       return res.status(404).json({
         success: false,
         message: 'Book not found or does not belong to this user'
       });
     }
+    console.log('✅ Book found:', book.title);
 
     const deletionReport = {
       bookDeleted: false,
@@ -785,32 +816,40 @@ const deleteBook = async (req, res) => {
     };
 
     // Extract and delete images from the book content
+    console.log('🔍 Processing images...');
     try {
-      const cloudinary = require('cloudinary').v2;
-      
-      // Configure Cloudinary
-      cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET
-      });
+      // Only process images if Cloudinary is configured
+      if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+        const cloudinary = require('cloudinary').v2;
+        
+        // Configure Cloudinary
+        cloudinary.config({
+          cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+          api_key: process.env.CLOUDINARY_API_KEY,
+          api_secret: process.env.CLOUDINARY_API_SECRET
+        });
 
-      // Extract image URLs from book content
-      const imageUrls = extractImageUrlsFromContent(book.content);
-      
-      for (const imageUrl of imageUrls) {
-        try {
-          // Extract public ID from URL
-          const publicId = extractPublicIdFromUrl(imageUrl);
-          if (publicId) {
-            await cloudinary.uploader.destroy(publicId);
-            console.log(`Deleted image from Cloudinary: ${publicId}`);
-            deletionReport.imagesDeleted++;
+        // Extract image URLs from book content
+        const imageUrls = extractImageUrlsFromContent(book.content);
+        console.log(`Found ${imageUrls.length} images to delete`);
+        
+        for (const imageUrl of imageUrls) {
+          try {
+            // Extract public ID from URL
+            const publicId = extractPublicIdFromUrl(imageUrl);
+            if (publicId) {
+              await cloudinary.uploader.destroy(publicId);
+              console.log(`Deleted image from Cloudinary: ${publicId}`);
+              deletionReport.imagesDeleted++;
+            }
+          } catch (cloudinaryError) {
+            console.error(`Failed to delete image: ${imageUrl}`, cloudinaryError);
+            deletionReport.errors.push(`Image deletion error: ${cloudinaryError.message}`);
           }
-        } catch (cloudinaryError) {
-          console.error(`Failed to delete image: ${imageUrl}`, cloudinaryError);
-          deletionReport.errors.push(`Image deletion error: ${cloudinaryError.message}`);
         }
+      } else {
+        console.log('⚠️ Cloudinary not configured, skipping image deletion');
+        deletionReport.errors.push('Cloudinary not configured - images not deleted');
       }
     } catch (imageError) {
       console.error('Error processing images:', imageError);
@@ -818,17 +857,22 @@ const deleteBook = async (req, res) => {
     }
 
     // Delete the book
+    console.log('🔍 Deleting book from database...');
     await Project.findByIdAndDelete(bookId);
     deletionReport.bookDeleted = true;
+    console.log('✅ Book deleted from database');
 
     // FIXED: Book allowance now properly increments when admin deletes a book
     // Increment the user's books remaining count
+    console.log('🔍 Updating user books remaining...');
     try {
-      const user = await User.findById(userId);
-      if (user && user.booksRemaining < user.booksAllowed) {
-        user.booksRemaining += 1;
-        await user.save();
-        console.log(`Updated books remaining for user ${userId}: ${user.booksRemaining}/${user.booksAllowed}`);
+      const userForUpdate = await User.findById(userId);
+      if (userForUpdate && userForUpdate.booksRemaining < userForUpdate.booksAllowed) {
+        userForUpdate.booksRemaining += 1;
+        await userForUpdate.save();
+        console.log(`✅ Updated books remaining for user ${userId}: ${userForUpdate.booksRemaining}/${userForUpdate.booksAllowed}`);
+      } else {
+        console.log(`⚠️ Not updating books remaining: current=${userForUpdate?.booksRemaining}, allowed=${userForUpdate?.booksAllowed}`);
       }
     } catch (userUpdateError) {
       console.error('Error updating user books remaining:', userUpdateError);
@@ -836,17 +880,26 @@ const deleteBook = async (req, res) => {
     }
 
     // Create audit log
-    await AuditLog.create({
-      action: 'DELETE_BOOK',
-      performedBy: req.user.userId || 'system',
-      targetUser: userId,
-      details: { 
-        bookId: bookId,
-        bookTitle: book.title,
-        deletionReport: deletionReport
-      }
-    });
+    console.log('🔍 Creating audit log...');
+    try {
+      await AuditLog.create({
+        action: 'DELETE_BOOK',
+        performedBy: req.user.userId || 'system',
+        targetUser: userId,
+        details: { 
+          bookId: bookId,
+          bookTitle: book.title,
+          deletionReport: deletionReport
+        }
+      });
+      console.log('✅ Audit log created');
+    } catch (auditError) {
+      console.error('Error creating audit log:', auditError);
+      deletionReport.errors.push(`Audit log error: ${auditError.message}`);
+      // Don't fail the entire operation for audit log issues
+    }
 
+    console.log('✅ DELETE BOOK SUCCESS:', deletionReport);
     res.status(200).json({
       success: true,
       message: 'Book deleted successfully',
@@ -854,11 +907,12 @@ const deleteBook = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Delete book error:', error);
+    console.error('❌ DELETE BOOK ERROR:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete book',
-      error: error.message
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };

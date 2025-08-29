@@ -32,7 +32,19 @@ const UserSchema = new mongoose.Schema({
   },
   subscription: {
     type: String,
-    enum: ['free', 'beta', 'single', 'single_promo', 'bundle5', 'bundle5_promo', 'bundle10', 'bundle10_promo', 'bundle20', 'bundle20_promo', 'poweruser', 'poweruser_promo', 'agency', 'agency_promo', 'additional', 'custom'],
+    enum: [
+      'free', 'beta', 'single', 'single_promo', 'bundle5', 'bundle5_promo', 
+      'bundle10', 'bundle10_promo', 'bundle20', 'bundle20_promo', 
+      'poweruser', 'poweruser_promo', 'agency', 'agency_promo', 
+      'additional', 'custom',
+      // Ebook plans
+      'eSingle', 'eSingle_promo', 'ebundle5_promo', 'ebundle10_promo', 
+      'ebundle20_promo', 'epoweruser_promo', 'eagency_promo',
+      // Full service plans
+      'fullService_promo', 'fullServicePlus_promo',
+      // Add-ons
+      'images_addon_100'
+    ],
     default: 'free'
   },
   booksRemaining: {
@@ -111,6 +123,11 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // Page limit tracking
+  pageLimit: {
+    type: Number,
+    default: null // null means unlimited pages
+  },
   // Promo redemption flags (server-side enforcement)
   promoRedemptions: {
     type: Object,
@@ -184,7 +201,20 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
       'agency': 180,
       'agency_promo': 180,
       'additional': 1, // Additional book purchase
-      'custom': 50 // Default for custom, can be overridden
+      'custom': 50, // Default for custom, can be overridden
+      // Ebook plans
+      'eSingle': 1,
+      'eSingle_promo': 1,
+      'ebundle5_promo': 5,
+      'ebundle10_promo': 10,
+      'ebundle20_promo': 20,
+      'epoweruser_promo': 48,
+      'eagency_promo': 180,
+      // Full service plans
+      'fullService_promo': 50,
+      'fullServicePlus_promo': 100,
+      // Add-ons
+      'images_addon_100': 1 // Image addon doesn't change book count
     };
   
   this.booksAllowed = planLimits[this.subscription] || 1;
@@ -217,9 +247,60 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
       'agency': 1800,
       'agency_promo': 1980,
       'additional': 10, // Additional book: +10 images
+      // Ebook plans
+      'eSingle': 12,
+      'eSingle_promo': 11,
+      'ebundle5_promo': 55,
+      'ebundle10_promo': 110,
+      'ebundle20_promo': 220,
+      'epoweruser_promo': 528,
+      'eagency_promo': 1980,
+      // Full service plans
+      'fullService_promo': 500,
+      'fullServicePlus_promo': 1000,
+      // Add-ons
+      'images_addon_100': 100 // Image addon gives 100 additional images
     };
   
   this.imagesAllowed = imagePlanLimits[this.subscription] || 2; // Default to 2 for free plan
+};
+
+// Method to update page limits based on subscription
+UserSchema.methods.updatePageLimits = function() {
+  const pageLimitPlans = {
+    // Standard plans (unlimited pages)
+    'free': null,
+    'beta': null,
+    'single': null,
+    'single_promo': null,
+    'bundle5': null,
+    'bundle5_promo': null,
+    'bundle10': null,
+    'bundle10_promo': null,
+    'bundle20': null,
+    'bundle20_promo': null,
+    'poweruser': null,
+    'poweruser_promo': null,
+    'agency': null,
+    'agency_promo': null,
+    'additional': null,
+    'custom': null,
+    // Ebook plans (50-page limit)
+    'eSingle': 50,
+    'eSingle_promo': 50,
+    'ebundle5_promo': 50,
+    'ebundle10_promo': 50,
+    'ebundle20_promo': 50,
+    'epoweruser_promo': 50,
+    'eagency_promo': 50,
+    // Full service plans (unlimited pages)
+    'fullService_promo': null,
+    'fullServicePlus_promo': null,
+    // Add-ons (no page limit change)
+    'images_addon_100': null
+  };
+
+  this.pageLimit = pageLimitPlans[this.subscription];
 };
 
 // Method to get total image limit
@@ -237,6 +318,7 @@ UserSchema.pre('save', function(next) {
   if (this.isModified('subscription')) {
     this.updateBooksAllowance();
     this.updateImageLimits();
+    this.updatePageLimits();
   }
   next();
 });

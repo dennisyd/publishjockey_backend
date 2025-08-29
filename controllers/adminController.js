@@ -203,7 +203,6 @@ const updateUserInfo = async (req, res) => {
     
     // Update user
     console.log('🔍 Updating user in database...');
-    const user = await User.findById(userId);
     
     // Apply updates to the user object
     Object.assign(user, updateData);

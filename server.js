@@ -27,15 +27,14 @@ const adminAffiliateRoutes = require('./routes/adminAffiliateRoutes');
 const { validateNonce, clearNonceStore, getNonceStoreStats } = require('./middleware/antiReplay');
 const { validateCsrfToken, generateCsrfToken } = require('./middleware/csrf');
 const { trackReferralClick, trackReferralRegistration, trackReferralConversion } = require('./middleware/referralTracking');
+const Logger = require('./utils/logger');
+const { projectRouteSecurity } = require('./middleware/contentSecurity');
 
 // Create Express app
 const app = express();
 
-// Add request logging middleware
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
+// Add secure request logging middleware
+app.use(Logger.requestMiddleware());
 
 // Ensure Stripe webhook receives raw body for signature verification
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
@@ -83,14 +82,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get('/public-files/:dir/:file', (req, res) => {
   try {
     const { dir, file } = req.params;
-    console.log('Direct file access request:', { dir, file });
+    Logger.debug('Direct file access request', { dir, file });
     
     // Security check - sanitize paths
     const sanitizedDir = dir.replace(/[^a-zA-Z0-9]/g, '');
     const sanitizedFile = file.replace(/[^a-zA-Z0-9_\-.]/g, '');
     
     const filePath = path.join(__dirname, 'temp', sanitizedDir, sanitizedFile);
-    console.log('Attempting to serve file from:', filePath);
+    Logger.debug('Attempting to serve file from path', { filePath });
     
     // Check if file exists
     if (!fs.existsSync(filePath)) {
@@ -109,18 +108,18 @@ app.get('/public-files/:dir/:file', (req, res) => {
 // Apply security middleware (rate limiting, input sanitization, security headers)
 const { securityMiddleware } = require('./middleware/security');
 
-// Apply security middleware to all routes EXCEPT project routes (temporarily)
+// Apply security middleware with content-aware protection for project routes
 app.use((req, res, next) => {
-  // Skip security middleware for project routes to preserve content
   if (req.path.startsWith('/api/projects')) {
-    return next();
+    // Apply content-aware security for project routes
+    return projectRouteSecurity(req, res, next);
   }
+  // Apply full security middleware to all other routes
+  securityMiddleware.forEach(middleware => middleware(req, res, () => {}));
   next();
 });
 
-// Apply security middleware to all other routes
-app.use(securityMiddleware);
-console.log('🛡️ Security middleware enabled (excluding project routes)');
+Logger.info('🛡️ Security middleware enabled with content-aware protection for project routes');
 
 // Health check route (exclude from anti-replay protection)
 app.get('/health', (req, res) => {
@@ -213,7 +212,7 @@ app.use((req, res, next) => {
   }
   validateNonce(req, res, next);
 });
-console.log('🛡️ Anti-replay protection enabled (excluding auth, project and image routes)');
+Logger.info('🛡️ Anti-replay protection enabled with content-aware handling for project routes');
 
 // Apply CSRF protection to all state-changing operations
 app.use((req, res, next) => {
@@ -250,10 +249,10 @@ app.use((req, res, next) => {
   // Apply CSRF protection to all other state-changing operations
   validateCsrfToken(req, res, next);
 });
-console.log('🛡️ CSRF protection enabled for state-changing operations');
+Logger.info('🛡️ CSRF protection enabled for state-changing operations');
 
 // Routes
-console.log('🔗 Registering routes...');
+Logger.info('🔗 Registering routes...');
 app.use('/api', splitDoctorRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 
@@ -274,23 +273,23 @@ app.use('/api/images', imageRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/affiliates', affiliateRoutes);
 app.use('/api/admin', adminAffiliateRoutes);
-console.log('✅ All routes registered');
+Logger.info('✅ All routes registered');
 
 // Add a specific route for file downloads to make absolutely sure it's registered
 app.get('/api/download', verifyToken, (req, res) => {
-  console.log('Download request received:', req.url, req.query);
+  Logger.debug('Download request received', { url: req.url, query: req.query });
   downloadFile(req, res);
 });
 
 // Add a special download route for SplitDoctor files (these are temporary anyway)
 app.get('/api/document-download', (req, res) => {
-  console.log('Document download request received:', req.url, req.query);
+  Logger.debug('Document download request received', { url: req.url, query: req.query });
   downloadFile(req, res);
 });
 
 // Add a completely public download route for document files
 app.get('/api/public-download', (req, res) => {
-  console.log('Public download request received:', req.url, req.query);
+  Logger.debug('Public download request received', { url: req.url, query: req.query });
   // Don't use any auth middleware
   downloadFile(req, res);
 });
@@ -344,13 +343,13 @@ const start = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });
-    console.log('Connected to MongoDB');
+    Logger.info('Connected to MongoDB');
     
 
     
     // Simple HTTP server without HTTPS
     app.listen(PORT, () => {
-      console.log(`HTTP Server running in ${config.nodeEnv} mode on port ${PORT}`);
+      Logger.info(`HTTP Server running in ${config.nodeEnv} mode on port ${PORT}`);
     });
   } catch (error) {
     console.error('Failed to connect to MongoDB:', error);

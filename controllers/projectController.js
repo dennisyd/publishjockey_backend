@@ -31,13 +31,13 @@ exports.getProjects = async (req, res) => {
       }
     }
     
-    console.log('Query for projects:', query);
+    // Query for projects
     
     const projects = await Project.find(query)
       .populate('owner', 'name email')
       .populate('collaborators', 'name email');
     
-    console.log(`Found ${projects.length} projects for user`);
+    // Found projects for user
     
     res.status(200).json({
       success: true,
@@ -120,8 +120,7 @@ exports.getProject = async (req, res) => {
  */
 exports.createProject = async (req, res) => {
   try {
-    console.log('Create project request body:', req.body);
-    console.log('User from request:', req.user);
+    // Create project request received
     
     // Validate required fields manually before attempting to create
     if (!req.body.title) {
@@ -194,18 +193,7 @@ exports.createProject = async (req, res) => {
  */
 exports.updateProject = async (req, res) => {
   try {
-    // Debug: Log the incoming request
-    console.log('🔍 UPDATE PROJECT DEBUG:', {
-      method: req.method,
-      path: req.path,
-      bodyKeys: Object.keys(req.body),
-      hasContent: !!req.body.content,
-      contentType: typeof req.body.content,
-      contentKeys: req.body.content && typeof req.body.content === 'object' ? Object.keys(req.body.content) : [],
-      contentPreview: req.body.content && typeof req.body.content === 'object' ? JSON.stringify(req.body.content).substring(0, 200) : 'N/A',
-      hasTitle: !!req.body.title,
-      title: req.body.title
-    });
+    // Update project request received
 
     // Validate if the id is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {

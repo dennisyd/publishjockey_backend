@@ -161,7 +161,7 @@ const getUserDetails = async (req, res) => {
 // Update user information
 const updateUserInfo = async (req, res) => {
   try {
-    console.log('🔍 UPDATE USER START:', { userId: req.params.userId, body: req.body });
+    // Update user request received
     
     const { userId } = req.params;
     const { name, email, role, subscription } = req.body;

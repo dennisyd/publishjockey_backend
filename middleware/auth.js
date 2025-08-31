@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');
 const { AuthError } = require('./error');
+const Logger = require('../utils/logger');
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
@@ -21,7 +22,7 @@ const verifyToken = (req, res, next) => {
   
   // If no token found in either place
   if (!token) {
-    console.log('No token provided - proceeding as anonymous user');
+    Logger.debug('No token provided - proceeding as anonymous user');
     req.user = { id: 'anonymous', role: 'anonymous' };
     return next();
   }
@@ -36,10 +37,17 @@ const verifyToken = (req, res, next) => {
     }
     
     req.user = decoded;
-    console.log('Token verified for user:', decoded.userId || decoded.id, 'Role:', decoded.role);
+    Logger.security('Token verified', {
+      userId: decoded.userId || decoded.id,
+      role: decoded.role,
+      success: true
+    });
     next();
   } catch (error) {
-    console.log('Invalid token:', error.message);
+    Logger.security('Invalid token', {
+      error: error.message,
+      success: false
+    });
     req.user = { id: 'anonymous', role: 'anonymous' };
     next();
   }
@@ -84,7 +92,10 @@ const verifyTokenStrict = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
-    console.error('Token verification failed:', error.message);
+    Logger.security('Strict token verification failed', {
+      error: error.message,
+      success: false
+    });
     return res.status(401).json({
       success: false,
       message: 'Invalid or expired token'

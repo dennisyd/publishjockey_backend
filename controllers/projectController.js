@@ -260,6 +260,21 @@ exports.createBookBuilderProject = async (req, res) => {
     
     console.log('BookBuilder project created successfully:', project._id);
     
+    // Decrement user's book count if they have a userId
+    if (userId && userId !== 'anonymous') {
+      try {
+        const user = await User.findById(userId);
+        if (user && user.booksRemaining > 0) {
+          user.booksRemaining -= 1;
+          await user.save();
+          console.log(`User ${userId} books remaining decremented to: ${user.booksRemaining}`);
+        }
+      } catch (error) {
+        console.error('Error decrementing books remaining for BookBuilder project:', error);
+        // Don't fail the project creation if book count update fails
+      }
+    }
+    
     res.status(201).json({
       success: true,
       message: 'BookBuilder project created successfully',

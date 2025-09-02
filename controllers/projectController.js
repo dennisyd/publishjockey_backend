@@ -226,7 +226,7 @@ exports.createBookBuilderProject = async (req, res) => {
     // Prepare project data
     const projectData = {
       title,
-      description: `Imported via WordWizard${author ? ` by ${author}` : ''}`,
+      description: `Imported via BookBuilder${author ? ` by ${author}` : ''}`,
       structure,
       content,
       language: language || 'en',
@@ -241,11 +241,14 @@ exports.createBookBuilderProject = async (req, res) => {
       projectData.userId = userId;
     }
     
-    console.log('Creating WordWizard project with data:', {
+    console.log('Creating BookBuilder project with data:', {
       title: projectData.title,
       language: projectData.language,
       structureKeys: Object.keys(projectData.structure),
       contentKeys: Object.keys(projectData.content),
+      contentSample: Object.keys(projectData.content).slice(0, 3).map(key => 
+        `${key}: ${(projectData.content[key] || '').substring(0, 100)}...`
+      ),
       sectionsCount: {
         front: projectData.structure.front.length,
         main: projectData.structure.main.length,
@@ -255,16 +258,16 @@ exports.createBookBuilderProject = async (req, res) => {
     
     const project = await Project.create(projectData);
     
-    console.log('WordWizard project created successfully:', project._id);
+    console.log('BookBuilder project created successfully:', project._id);
     
     res.status(201).json({
       success: true,
-      message: 'WordWizard project created successfully',
+      message: 'BookBuilder project created successfully',
       data: project,
       id: project._id.toString()
     });
   } catch (error) {
-    console.error('Error creating WordWizard project:', error);
+    console.error('Error creating BookBuilder project:', error);
     
     // Handle validation errors
     if (error.name === 'ValidationError') {
@@ -278,7 +281,7 @@ exports.createBookBuilderProject = async (req, res) => {
     
     res.status(500).json({
       success: false,
-      message: 'Server error creating WordWizard project',
+      message: 'Server error creating BookBuilder project',
       error: error.message
     });
   }

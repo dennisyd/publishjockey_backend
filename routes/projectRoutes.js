@@ -7,6 +7,7 @@ const {
   getProjects,
   getProject,
   createProject,
+  createBookBuilderProject,
   updateProject,
   deleteProject,
   getProjectWordCount
@@ -30,5 +31,10 @@ router
 router
   .route('/:id/wordcount')
   .get(getProjectWordCount);
+
+// BookBuilder import route
+router
+  .route('/book-builder')
+  .post(createBookBuilderProject);
 
 module.exports = router; 

@@ -187,6 +187,104 @@ exports.createProject = async (req, res) => {
 };
 
 /**
+ * Create a project from WordWizard import
+ * @route POST /api/projects/book-builder
+ * @access Private
+ */
+exports.createBookBuilderProject = async (req, res) => {
+  try {
+    console.log('BookBuilder project creation request received');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
+    // Validate required fields
+    const { title, structure, content, author, language } = req.body;
+    
+    if (!title) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project title is required',
+        errors: ['Project title is required']
+      });
+    }
+    
+    if (!structure || !structure.front || !structure.main || !structure.back) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid project structure',
+        errors: ['Project structure with front, main, and back matter is required']
+      });
+    }
+    
+    if (!content || typeof content !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: 'Project content is required',
+        errors: ['Project content object is required']
+      });
+    }
+    
+    // Prepare project data
+    const projectData = {
+      title,
+      description: `Imported via WordWizard${author ? ` by ${author}` : ''}`,
+      structure,
+      content,
+      language: language || 'en',
+      createdVia: 'book-builder'
+    };
+    
+    const userId = req.user?.userId || req.user?.id;
+    
+    // Set both owner and userId fields
+    if (userId && userId !== 'anonymous') {
+      projectData.owner = userId;
+      projectData.userId = userId;
+    }
+    
+    console.log('Creating WordWizard project with data:', {
+      title: projectData.title,
+      language: projectData.language,
+      structureKeys: Object.keys(projectData.structure),
+      contentKeys: Object.keys(projectData.content),
+      sectionsCount: {
+        front: projectData.structure.front.length,
+        main: projectData.structure.main.length,
+        back: projectData.structure.back.length
+      }
+    });
+    
+    const project = await Project.create(projectData);
+    
+    console.log('WordWizard project created successfully:', project._id);
+    
+    res.status(201).json({
+      success: true,
+      message: 'WordWizard project created successfully',
+      data: project,
+      id: project._id.toString()
+    });
+  } catch (error) {
+    console.error('Error creating WordWizard project:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: messages
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Server error creating WordWizard project',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Update a project
  * @route PUT /api/projects/:id
  * @access Private

@@ -274,8 +274,8 @@ const login = async (req, res) => {
 
     // Generate access and refresh tokens
     console.log('Generating JWT tokens for user:', user._id.toString());
-    const accessToken = generateJWT(user, '15m'); // 15 minutes
-    const refreshToken = generateJWT(user, '7d'); // 7 days
+    const accessToken = generateJWT(user, config.jwt.accessTokenExpiry); // Use config value
+    const refreshToken = generateJWT(user, config.jwt.refreshTokenExpiry); // Use config value
     console.log('JWT tokens generated:', {
       accessToken: accessToken ? `${accessToken.substring(0, 10)}...` : 'none',
       refreshToken: refreshToken ? `${refreshToken.substring(0, 10)}...` : 'none'
@@ -296,7 +296,7 @@ const login = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 15 * 60 * 1000 // 15 minutes
+      maxAge: 60 * 60 * 1000 // 1 hour (matches token expiry)
     });
     
     res.cookie('refreshToken', refreshToken, {
@@ -569,15 +569,15 @@ const refreshToken = async (req, res) => {
       }
       
       // Generate new tokens
-      const newAccessToken = generateJWT(user, '15m');
-      const newRefreshToken = generateJWT(user, '7d');
+      const newAccessToken = generateJWT(user, config.jwt.accessTokenExpiry);
+      const newRefreshToken = generateJWT(user, config.jwt.refreshTokenExpiry);
       
       // Set new cookies
       res.cookie('accessToken', newAccessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 15 * 60 * 1000 // 15 minutes
+        maxAge: 60 * 60 * 1000 // 1 hour (matches token expiry)
       });
       
       res.cookie('refreshToken', newRefreshToken, {

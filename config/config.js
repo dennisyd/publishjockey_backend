@@ -12,7 +12,7 @@ const config = {
   jwt: {
     accessTokenSecret: process.env.JWT_ACCESS_TOKEN_SECRET,
     refreshTokenSecret: process.env.JWT_REFRESH_TOKEN_SECRET,
-    accessTokenExpiry: process.env.JWT_ACCESS_TOKEN_EXPIRY || '8h',
+    accessTokenExpiry: process.env.JWT_ACCESS_TOKEN_EXPIRY || '1h',
     refreshTokenExpiry: process.env.JWT_REFRESH_TOKEN_EXPIRY || '30d'
   },
   

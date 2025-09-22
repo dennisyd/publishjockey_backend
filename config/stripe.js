@@ -112,7 +112,7 @@ const SUBSCRIPTION_PLANS = {
   // Full-service plans
   fullService: {
     name: 'Full Service',
-    description: 'Complete publishing package with custom cover designs (3-year validity)',
+    description: 'Complete publishing package with custom cover designs (Final PDF and eBook delivery within 72 hours of cover approval)',
     priceId: process.env.STRIPE_FULLSERVICE_PRICE_ID,
     price: 49900, // $499.00
     booksAllowed: 1,
@@ -120,7 +120,7 @@ const SUBSCRIPTION_PLANS = {
   },
   fullServicePlus: {
     name: 'Full Service Plus',
-    description: 'Complete package with custom covers and KDP setup guidance (3-year validity)',
+    description: 'Complete package with custom covers and KDP setup guidance (Final PDF and eBook delivery within 72 hours of cover approval)',
     priceId: process.env.STRIPE_FULLSERVICEPLUS_PRICE_ID,
     price: 59900, // $599.00
     booksAllowed: 1,
@@ -236,7 +236,7 @@ const SUBSCRIPTION_PLANS = {
   // Full-service promo plans
   fullService_promo: {
     name: 'Full Service — Promo',
-    description: 'Launch offer for full service package (3-year validity)',
+    description: 'Launch offer for full service package (Final PDF and eBook delivery within 72 hours of cover approval)',
     priceId: process.env.STRIPE_FULLSERVICE_PROMO_PRICE_ID,
     price: 44900, // $449.00
     booksAllowed: 1,
@@ -244,7 +244,7 @@ const SUBSCRIPTION_PLANS = {
   },
   fullServicePlus_promo: {
     name: 'Full Service Plus — Promo',
-    description: 'Launch offer for full service plus package (3-year validity)',
+    description: 'Launch offer for full service plus package (Final PDF and eBook delivery within 72 hours of cover approval)',
     priceId: process.env.STRIPE_FULLSERVICEPLUS_PROMO_PRICE_ID,
     price: 54900, // $549.00
     booksAllowed: 1,

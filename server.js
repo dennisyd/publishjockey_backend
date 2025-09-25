@@ -284,6 +284,8 @@ app.use('/api/v1/admin/affiliates', adminAffiliateRoutes);
 
 // Legacy Routes (Backward Compatibility) - Keep existing functionality
 Logger.info('🔗 Registering legacy routes for backward compatibility...');
+app.use('/api', splitDoctorRoutes);
+app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/auth', trackReferralRegistration, authRoutes);
 app.use('/api/admin', verifyTokenStrict, requireAdmin, adminRoutes);
 app.use('/api/admin/title-changes', titleChangeRoutes);

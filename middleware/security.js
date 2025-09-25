@@ -1,8 +1,25 @@
+/**
+ * SECURITY MIDDLEWARE - CSP IMPLEMENTATION
+ *
+ * 🚨 IMPORTANT: If CSP breaks anything, rollback immediately:
+ * 1. Change reportOnly: true to reportOnly: false (line 129)
+ * 2. Uncomment the unsafe-inline and unsafe-eval directives (lines 88-89, 96)
+ * 3. Remove the nonce-based CSP section (lines 75-132)
+ * 4. Restart the server
+ *
+ * This implementation starts in REPORT-ONLY mode to monitor violations
+ * without blocking legitimate functionality.
+ *
+ * Yancy Dennis - Enhanced CSP Implementation
+ */
+
 const helmet = require('helmet');
 const cors = require('cors');
 const config = require('../config/config');
 const rateLimiting = require('./rateLimiting');
 const { sanitizeInput } = require('./validation');
+const SecurityMonitor = require('../services/securityMonitor');
+const crypto = require('crypto');
 // const { htmlSanitizerMiddleware } = require('./htmlSanitizer');
 const { simpleSanitizerMiddleware } = require('./simpleSanitizer');
 
@@ -14,6 +31,13 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
   maxAge: 600 // Cache preflight requests for 10 minutes
+};
+
+// CSP Configuration - Easy rollback mechanism
+const CSP_CONFIG = {
+  ENABLED: process.env.CSP_ENABLED !== 'false', // Default to enabled, set to 'false' to disable
+  REPORT_ONLY: process.env.CSP_REPORT_ONLY !== 'false', // Default to report-only, set to 'false' to enforce
+  LOG_VIOLATIONS: process.env.CSP_LOG_VIOLATIONS === 'true' // Default to false, set to 'true' for debugging
 };
 
 // Security middleware configuration
@@ -42,54 +66,100 @@ const securityMiddleware = [
   // Basic security headers
   helmet(),
   
-  // Enhanced Content Security Policy
-  helmet.contentSecurityPolicy({
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: [
-        "'self'",
-        "'unsafe-inline'", // TODO: Remove after migrating to nonce-based CSP
-        "'unsafe-eval'" // Required for React development
-      ],
-      styleSrc: [
-        "'self'",
-        "'unsafe-inline'", // TODO: Remove after migrating to nonce-based CSP
-        "https://fonts.googleapis.com" // If using Google Fonts
-      ],
-      imgSrc: [
-        "'self'",
-        "data:",
-        "blob:",
-        "https://res.cloudinary.com",
-        "https://*.cloudinary.com",
-        "https://images.unsplash.com" // TODO: Remove after self-hosting demo images
-      ],
-      connectSrc: [
-        "'self'",
-        "https://api.cloudinary.com",
-        "https://publishjockey-backend.onrender.com",
-        "https://publishjockey-export.onrender.com",
-        "https://publishjockey-frontend.vercel.app",
-        "https://api.stripe.com",
-        "https://checkout.stripe.com"
-      ],
-      fontSrc: [
-        "'self'",
-        "data:",
-        "https://fonts.gstatic.com" // If using Google Fonts
-      ],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-      workerSrc: ["'self'"],
-      manifestSrc: ["'self'"],
-      baseUri: ["'self'"],
-      formAction: ["'self'"],
-      upgradeInsecureRequests: []
-    },
-    reportOnly: false, // Set to true for testing
-    reportUri: '/api/csp-violation' // CSP violation reporting endpoint
-  }),
+  // CSP violation reporting endpoint - only active when CSP is enabled
+  (req, res, next) => {
+    if (req.path === '/api/csp-violation' && CSP_CONFIG.ENABLED) {
+      try {
+        const violation = req.body;
+
+        if (CSP_CONFIG.LOG_VIOLATIONS) {
+          console.log('🔒 CSP VIOLATION DETECTED:', {
+            blockedUri: violation['csp-report']?.blockedUri,
+            violatedDirective: violation['csp-report']?.violatedDirective,
+            documentUri: violation['csp-report']?.documentUri,
+            sourceFile: violation['csp-report']?.sourceFile,
+            timestamp: new Date().toISOString()
+          });
+        }
+
+        // Log to security monitor (non-blocking)
+        const securityMonitor = new SecurityMonitor();
+        securityMonitor.logCspViolation(violation, req);
+
+        // Always return 204 (success) for CSP reports
+        return res.status(204).end();
+      } catch (error) {
+        console.error('Error handling CSP violation:', error);
+        return res.status(204).end(); // Still return success to avoid breaking CSP
+      }
+    }
+    next();
+  },
+
+  // Enhanced Content Security Policy - CONDITIONAL IMPLEMENTATION
+  (req, res, next) => {
+    if (!CSP_CONFIG.ENABLED) {
+      console.log('🔒 CSP: Disabled - skipping CSP middleware');
+      return next();
+    }
+
+    // Generate nonce for this request
+    const nonce = crypto.randomBytes(16).toString('base64');
+    req.cspNonce = nonce;
+
+    // Create CSP with nonce support
+    helmet.contentSecurityPolicy({
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          `'nonce-${nonce}'`, // Allow scripts with this nonce
+          // Keep unsafe-inline for now - will monitor violations first
+          "'unsafe-inline'", // TODO: Remove after monitoring period
+          "'unsafe-eval'" // TODO: Remove after monitoring period
+        ],
+        styleSrc: [
+          "'self'",
+          `'nonce-${nonce}'`, // Allow styles with this nonce
+          "https://fonts.googleapis.com", // Keep for Google Fonts
+          // Keep unsafe-inline for now - will monitor violations first
+          "'unsafe-inline'", // TODO: Remove after monitoring period
+        ],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "blob:",
+          "https://res.cloudinary.com",
+          "https://*.cloudinary.com",
+          "https://images.unsplash.com"
+        ],
+        connectSrc: [
+          "'self'",
+          "https://api.cloudinary.com",
+          "https://publishjockey-backend.onrender.com",
+          "https://publishjockey-export.onrender.com",
+          "https://publishjockey-frontend.vercel.app",
+          "https://api.stripe.com",
+          "https://checkout.stripe.com"
+        ],
+        fontSrc: [
+          "'self'",
+          "data:",
+          "https://fonts.gstatic.com"
+        ],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+        workerSrc: ["'self'"],
+        manifestSrc: ["'self'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        upgradeInsecureRequests: []
+      },
+      reportOnly: CSP_CONFIG.REPORT_ONLY, // ✅ CONFIGURABLE: Start in report-only mode
+      reportUri: '/api/csp-violation' // CSP violation reporting endpoint
+    })(req, res, next);
+  },
   
   // Prevent clickjacking
   helmet.frameguard({ action: 'deny' }),

@@ -40,6 +40,11 @@ const CSP_CONFIG = {
   LOG_VIOLATIONS: process.env.CSP_LOG_VIOLATIONS === 'true' // Default to false, set to 'true' for debugging
 };
 
+// 🚨 IMPORTANT: If CSP breaks anything, rollback immediately:
+// 1. Set CSP_ENABLED=false in Render Environment Variables
+// 2. Restart the backend service
+// 3. All CSP restrictions removed, old behavior restored
+
 // Security middleware configuration
 const securityMiddleware = [
   // General rate limiting (applied to all routes)

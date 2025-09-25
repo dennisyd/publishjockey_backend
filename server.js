@@ -253,16 +253,37 @@ Logger.info('🛡️ CSRF protection enabled for state-changing operations');
 
 // Routes
 Logger.info('🔗 Registering routes...');
-app.use('/api', splitDoctorRoutes);
-app.use('/api/testimonials', testimonialRoutes);
 
-// Referral click tracking route
-app.get('/api/referral/:affiliateCode', trackReferralClick, (req, res) => {
-  // Redirect to the main site with the affiliate code
-  const affiliateCode = req.params.affiliateCode;
-  res.redirect(`/?ref=${affiliateCode}`);
-});
+/**
+ * API VERSIONING STRATEGY:
+ *
+ * ✅ VERSIONED ROUTES: /api/v1/ (New standard - future-proof)
+ * ✅ LEGACY ROUTES: /api/ (Existing functionality - no breaking changes)
+ *
+ * This approach provides:
+ * - Zero breaking risk to existing clients
+ * - Clear migration path for future changes
+ * - Easy rollback capability
+ * - Professional API design standards
+ */
 
+// API v1 Routes (Versioned) - New standard
+Logger.info('🔗 Registering API v1 routes...');
+app.use('/api/v1', splitDoctorRoutes);
+app.use('/api/v1/testimonials', testimonialRoutes);
+app.use('/api/v1/auth', trackReferralRegistration, authRoutes);
+app.use('/api/v1/admin', verifyTokenStrict, requireAdmin, adminRoutes);
+app.use('/api/v1/admin/title-changes', titleChangeRoutes);
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/projects', projectRoutes);
+app.use('/api/v1/stripe', trackReferralConversion, stripeRoutes);
+app.use('/api/v1/images', imageRoutes);
+app.use('/api/v1/security', securityRoutes);
+app.use('/api/v1/affiliates', affiliateRoutes);
+app.use('/api/v1/admin/affiliates', adminAffiliateRoutes);
+
+// Legacy Routes (Backward Compatibility) - Keep existing functionality
+Logger.info('🔗 Registering legacy routes for backward compatibility...');
 app.use('/api/auth', trackReferralRegistration, authRoutes);
 app.use('/api/admin', verifyTokenStrict, requireAdmin, adminRoutes);
 app.use('/api/admin/title-changes', titleChangeRoutes);
@@ -272,7 +293,14 @@ app.use('/api/stripe', trackReferralConversion, stripeRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/affiliates', affiliateRoutes);
-app.use('/api/admin', adminAffiliateRoutes);
+app.use('/api/admin/affiliates', adminAffiliateRoutes);
+
+// Referral click tracking route
+app.get('/api/referral/:affiliateCode', trackReferralClick, (req, res) => {
+  // Redirect to the main site with the affiliate code
+  const affiliateCode = req.params.affiliateCode;
+  res.redirect(`/?ref=${affiliateCode}`);
+});
 Logger.info('✅ All routes registered');
 
 // Add a specific route for file downloads to make absolutely sure it's registered
@@ -291,6 +319,22 @@ app.get('/api/document-download', (req, res) => {
 app.get('/api/public-download', (req, res) => {
   Logger.debug('Public download request received', { url: req.url, query: req.query });
   // Don't use any auth middleware
+  downloadFile(req, res);
+});
+
+// Versioned download routes (API v1)
+app.get('/api/v1/download', verifyToken, (req, res) => {
+  Logger.debug('V1 Download request received', { url: req.url, query: req.query });
+  downloadFile(req, res);
+});
+
+app.get('/api/v1/document-download', (req, res) => {
+  Logger.debug('V1 Document download request received', { url: req.url, query: req.query });
+  downloadFile(req, res);
+});
+
+app.get('/api/v1/public-download', (req, res) => {
+  Logger.debug('V1 Public download request received', { url: req.url, query: req.query });
   downloadFile(req, res);
 });
 

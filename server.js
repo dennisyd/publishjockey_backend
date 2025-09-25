@@ -134,71 +134,6 @@ app.get('/api/health', (req, res) => {
 // CSRF token endpoint (exclude from anti-replay protection)
 app.get('/api/csrf-token', generateCsrfToken);
 
-// Test endpoint to clear nonce store (development only)
-if (process.env.NODE_ENV === 'development') {
-  app.post('/api/clear-nonces', (req, res) => {
-    const clearedCount = clearNonceStore();
-    res.json({ 
-      success: true, 
-      message: `Cleared ${clearedCount} nonces from store`,
-      timestamp: new Date().toISOString()
-    });
-  });
-  
-  // Also add a GET endpoint for easier testing
-  app.get('/api/clear-nonces', (req, res) => {
-    const clearedCount = clearNonceStore();
-    res.json({ 
-      success: true, 
-      message: `Cleared ${clearedCount} nonces from store`,
-      timestamp: new Date().toISOString()
-    });
-  });
-  
-  // Add endpoint to get nonce store statistics
-  app.get('/api/nonce-stats', (req, res) => {
-    const stats = getNonceStoreStats();
-    res.json({ 
-      success: true, 
-      stats,
-      timestamp: new Date().toISOString()
-    });
-  });
-  
-  // Add a simple test endpoint to verify UUID generation
-  app.get('/api/test-uuid', (req, res) => {
-    const { generateNonce } = require('./middleware/antiReplay');
-    const testUuid = generateNonce();
-    res.json({
-      success: true,
-      uuid: testUuid,
-      isUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(testUuid),
-      timestamp: new Date().toISOString()
-    });
-  });
-  
-  // Add a test endpoint to generate multiple UUIDs and check uniqueness
-  app.get('/api/test-uuid-uniqueness', (req, res) => {
-    const { generateNonce } = require('./middleware/antiReplay');
-    const uuids = [];
-    const uuidSet = new Set();
-    
-    for (let i = 0; i < 10; i++) {
-      const uuid = generateNonce();
-      uuids.push(uuid);
-      uuidSet.add(uuid);
-    }
-    
-    res.json({
-      success: true,
-      uuids: uuids.map(uuid => uuid.substring(0, 8) + '...'),
-      uniqueCount: uuidSet.size,
-      totalCount: uuids.length,
-      allUnique: uuidSet.size === uuids.length,
-      timestamp: new Date().toISOString()
-    });
-  });
-}
 
 // Apply anti-replay protection to all routes EXCEPT auth routes, project routes, image routes, and admin routes
 app.use((req, res, next) => {
@@ -340,41 +275,6 @@ app.get('/api/v1/public-download', (req, res) => {
   downloadFile(req, res);
 });
 
-// Test route for debugging
-app.get('/test', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
-    message: 'Test endpoint is working',
-    env: {
-      nodeEnv: config.nodeEnv,
-      port: config.port,
-      corsOrigins: config.cors.origin,
-      hasJwtSecret: !!config.jwt.accessTokenSecret,
-      hasRefreshSecret: !!config.jwt.refreshTokenSecret,
-      hasMongoUri: !!config.db.uri
-    }
-  });
-});
-
-// Test auth route to verify routing
-app.get('/api/auth/test', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
-    message: 'Auth routes are working',
-    path: req.path,
-    originalUrl: req.originalUrl
-  });
-});
-
-// Test login route specifically
-app.get('/api/auth/login', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
-    message: 'Login route is accessible',
-    method: req.method,
-    path: req.path
-  });
-});
 
 // Error handling middleware
 app.use(notFound);

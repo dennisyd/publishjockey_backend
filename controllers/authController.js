@@ -50,23 +50,14 @@ const register = async (req, res) => {
     } catch (emailError) {
       console.error('Email sending failed:', emailError);
       
-      // In development, still allow registration even if email fails
-      if (process.env.NODE_ENV === 'development') {
-        res.status(201).json({
-          success: true,
-          message: 'User registered successfully. Email verification failed - check console for verification URL.',
-          verificationUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
-        });
-      } else {
-        // In production, fail the registration if email can't be sent
-        // Delete the user since we can't send verification email
-        await User.findByIdAndDelete(user._id);
-        
-        res.status(500).json({
-          success: false,
-          message: 'Registration failed - unable to send verification email. Please try again later.'
-        });
-      }
+      // Fail the registration if email can't be sent
+      // Delete the user since we can't send verification email
+      await User.findByIdAndDelete(user._id);
+
+      res.status(500).json({
+        success: false,
+        message: 'Registration failed - unable to send verification email. Please try again later.'
+      });
     }
   } catch (error) {
     console.error('Registration error:', error);

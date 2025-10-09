@@ -144,6 +144,24 @@ const UserSchema = new mongoose.Schema({
       poweruser: false,
       agency: false
     }
+  },
+  // Stripe integration fields
+  stripeCustomerId: {
+    type: String,
+    sparse: true,
+    index: true
+  },
+  stripeSubscriptionId: {
+    type: String,
+    sparse: true
+  },
+  lastPaymentDate: {
+    type: Date
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'failed', 'refunded', 'none'],
+    default: 'none'
   }
 });
 

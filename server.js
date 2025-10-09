@@ -108,8 +108,13 @@ app.get('/public-files/:dir/:file', (req, res) => {
 // Apply security middleware (rate limiting, input sanitization, security headers)
 const { securityMiddleware } = require('./middleware/security');
 
-// Apply security middleware with content-aware protection for project routes
+// Apply security middleware with content-aware protection for project routes and webhook exclusion
 app.use((req, res, next) => {
+  // Skip security middleware for Stripe webhooks (needs raw body, has its own signature verification)
+  if (req.path === '/api/stripe/webhook') {
+    return next();
+  }
+  
   if (req.path.startsWith('/api/projects')) {
     // Apply content-aware security for project routes
     return projectRouteSecurity(req, res, next);
@@ -119,7 +124,7 @@ app.use((req, res, next) => {
   next();
 });
 
-Logger.info('🛡️ Security middleware enabled with content-aware protection for project routes');
+Logger.info('🛡️ Security middleware enabled with content-aware protection for project routes and webhooks');
 
 // Health check route (exclude from anti-replay protection)
 app.get('/health', (req, res) => {
@@ -135,19 +140,20 @@ app.get('/api/health', (req, res) => {
 app.get('/api/csrf-token', generateCsrfToken);
 
 
-// Apply anti-replay protection to all routes EXCEPT auth routes, project routes, image routes, and admin routes
+// Apply anti-replay protection to all routes EXCEPT auth routes, project routes, image routes, admin routes, and webhooks
 app.use((req, res, next) => {
-  // Skip anti-replay protection for auth routes, project routes, image routes, admin routes, and testimonial routes
+  // Skip anti-replay protection for auth routes, project routes, image routes, admin routes, testimonial routes, and Stripe webhooks
   if (req.path.startsWith('/api/auth/') || 
       req.path.startsWith('/api/projects') || 
       req.path.startsWith('/api/images') ||
       req.path.startsWith('/api/admin/') ||
-      req.path.startsWith('/api/testimonials')) {
+      req.path.startsWith('/api/testimonials') ||
+      req.path === '/api/stripe/webhook') {  // ← Stripe webhooks don't have nonces
     return next();
   }
   validateNonce(req, res, next);
 });
-Logger.info('🛡️ Anti-replay protection enabled with content-aware handling for project routes');
+Logger.info('🛡️ Anti-replay protection enabled with content-aware handling for project routes and webhooks');
 
 // Apply CSRF protection to all state-changing operations
 app.use((req, res, next) => {
@@ -168,6 +174,11 @@ app.use((req, res, next) => {
   
   // Skip CSRF protection for image routes (handled by Cloudinary)
   if (req.path.startsWith('/api/images/')) {
+    return next();
+  }
+  
+  // Skip CSRF protection for Stripe webhooks (verified by Stripe signature)
+  if (req.path === '/api/stripe/webhook') {
     return next();
   }
   

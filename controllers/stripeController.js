@@ -24,21 +24,6 @@ const createCheckoutSession = async (req, res) => {
     }
 
     const plan = SUBSCRIPTION_PLANS[planId];
-    
-    // Validate that the plan has a priceId configured
-    if (!plan.priceId) {
-      Logger.error('Missing price ID for plan', { planId, plan });
-      return res.status(500).json({
-        success: false,
-        message: `Configuration error: Missing Stripe price ID for plan "${planId}". Please contact support.`
-      });
-    }
-
-    // Get user first
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
 
     // Server-side promo enforcement
     const isPromoPlan = ['single_promo', 'bundle5_promo', 'bundle10_promo', 'bundle20_promo', 'poweruser_promo', 'agency_promo'].includes(planId);

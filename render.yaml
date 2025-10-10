@@ -41,6 +41,8 @@ services:
         sync: false
       - key: CSRF_SECRET
         sync: false
+      - key: STRIPE_IMAGES_ADDON_100_PRICE_ID
+        sync: false
 
 crons:
   - name: image-cleanup

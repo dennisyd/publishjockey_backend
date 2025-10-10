@@ -19,6 +19,76 @@
       "pdf publishing software",
       "professional book layout"
     ]
+  },
+  {
+    "id": "manuscript-to-print-ready",
+    "title": "How to Turn Your Manuscript Into a Print-Ready Book in Minutes",
+    "slug": "manuscript-to-print-ready",
+    "description": "A step-by-step guide to transforming your raw manuscript into a professionally formatted book using PublishJockey.",
+    "author": "The PublishJockey Team",
+    "publishDate": "2025-05-09",
+    "category": "Publishing Tips",
+    "tags": ["Book Formatting", "Self Publishing", "KDP", "Print on Demand"],
+    "featured": false,
+    "readTime": "5 min",
+    "excerpt": "If you've ever dreamed of publishing your book but found yourself intimidated by formatting requirements and design challenges, you're not alone. Many authors spend hundreds of dollars and countless hours trying to transform their manuscripts into professional, print-ready books.",
+    "seoKeywords": ["manuscript formatting", "print ready book", "book publishing", "self publishing tools"]
+  },
+  {
+    "id": "book-formatting-truth",
+    "title": "The Truth About Book Formatting: What Self-Publishers Need to Know",
+    "slug": "book-formatting-truth",
+    "description": "Discover the hidden challenges of book formatting and why modern tools are transforming the self-publishing landscape.",
+    "author": "Emma Richardson",
+    "publishDate": "2025-01-28",
+    "category": "Publishing Insights",
+    "tags": ["Book Formatting", "Self Publishing", "Publishing Tools"],
+    "featured": false,
+    "readTime": "8 min",
+    "excerpt": "When most authors finish writing their manuscript, they are often unprepared for what comes next: the seemingly simple but deceptively complex process of formatting their book.",
+    "seoKeywords": ["book formatting", "self publishing", "publishing tools", "typesetting"]
+  },
+  {
+    "id": "ai-covers-for-kdp",
+    "title": "Creating KDP-Ready Book Covers with AI: No Designer Needed",
+    "slug": "ai-covers-for-kdp",
+    "description": "Learn how to create professional book covers using AI tools like ChatGPT and upscale them for Amazon KDP using PublishJockey ImageMagic utility.",
+    "author": "The PublishJockey Team",
+    "publishDate": "2024-06-15",
+    "category": "Cover Design",
+    "tags": ["AI", "Book Covers", "KDP", "ChatGPT", "Cover Design"],
+    "featured": false,
+    "readTime": "6 min",
+    "excerpt": "The days of paying hundreds of dollars for book cover designs are coming to an end. With the rise of AI image generation tools like those in ChatGPT, authors can now create stunning cover images by simply describing what they want.",
+    "seoKeywords": ["ai book covers", "kdp cover design", "chatgpt book covers", "book cover generator"]
+  },
+  {
+    "id": "markdown-for-authors",
+    "title": "Markdown for Authors: Why It Is Simpler Than You Think",
+    "slug": "markdown-for-authors",
+    "description": "Demystifying Markdown for non-technical writers and showing why it is the perfect tool for modern book creation.",
+    "author": "The PublishJockey Team",
+    "publishDate": "2025-05-01",
+    "category": "Writing Tools",
+    "tags": ["Markdown", "Writing Tools", "Book Creation"],
+    "featured": false,
+    "readTime": "6 min",
+    "excerpt": "If you are an author, you have probably heard the word 'Markdown' tossed around by tech-savvy writers and publishing platforms. But what is Markdown, and why should you care?",
+    "seoKeywords": ["markdown for writers", "markdown tutorial", "writing tools", "book formatting"]
+  },
+  {
+    "id": "pdf-epub-docx-formats",
+    "title": "PDF, EPUB, DOCX: Which Format Do You Really Need?",
+    "slug": "pdf-epub-docx-formats",
+    "description": "A clear guide to the most common publishing formats—what they are, when to use them, and how to choose the right one for your book.",
+    "author": "The PublishJockey Team",
+    "publishDate": "2025-05-08",
+    "category": "Publishing Formats",
+    "tags": ["PDF", "EPUB", "DOCX", "File Formats", "Publishing"],
+    "featured": false,
+    "readTime": "7 min",
+    "excerpt": "If you are new to self-publishing, the world of file formats can feel overwhelming. PDF, EPUB, DOCX—what do they all mean, and which one is right for your book?",
+    "seoKeywords": ["pdf epub docx", "book formats", "publishing formats", "ebook formats"]
   }
 ]
 

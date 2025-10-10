@@ -6,6 +6,8 @@
 *.jpeg
 *.jpg
 *.md
+!blog/**/*.md
+!blog/README.md
 *.docx
 *.bat
 *.html 

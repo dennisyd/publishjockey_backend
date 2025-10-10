@@ -24,6 +24,7 @@ const imageRoutes = require('./routes/imageRoutes');
 const securityRoutes = require('./routes/securityRoutes');
 const affiliateRoutes = require('./routes/affiliateRoutes');
 const adminAffiliateRoutes = require('./routes/adminAffiliateRoutes');
+const blogRoutes = require('./routes/blogRoutes');
 const { validateNonce, clearNonceStore, getNonceStoreStats } = require('./middleware/antiReplay');
 const { validateCsrfToken, generateCsrfToken } = require('./middleware/csrf');
 const { trackReferralClick, trackReferralRegistration, trackReferralConversion } = require('./middleware/referralTracking');
@@ -140,14 +141,15 @@ app.get('/api/health', (req, res) => {
 app.get('/api/csrf-token', generateCsrfToken);
 
 
-// Apply anti-replay protection to all routes EXCEPT auth routes, project routes, image routes, admin routes, and webhooks
+// Apply anti-replay protection to all routes EXCEPT auth routes, project routes, image routes, admin routes, blog routes, and webhooks
 app.use((req, res, next) => {
-  // Skip anti-replay protection for auth routes, project routes, image routes, admin routes, testimonial routes, and Stripe webhooks
+  // Skip anti-replay protection for auth routes, project routes, image routes, admin routes, testimonial routes, blog routes, and Stripe webhooks
   if (req.path.startsWith('/api/auth/') || 
       req.path.startsWith('/api/projects') || 
       req.path.startsWith('/api/images') ||
       req.path.startsWith('/api/admin/') ||
       req.path.startsWith('/api/testimonials') ||
+      req.path.startsWith('/api/blog') ||
       req.path === '/api/stripe/webhook') {  // ← Stripe webhooks don't have nonces
     return next();
   }
@@ -227,6 +229,7 @@ app.use('/api/v1/images', imageRoutes);
 app.use('/api/v1/security', securityRoutes);
 app.use('/api/v1/affiliates', affiliateRoutes);
 app.use('/api/v1/admin/affiliates', adminAffiliateRoutes);
+app.use('/api/v1/blog', blogRoutes);
 
 // Legacy Routes (Backward Compatibility) - Keep existing functionality
 Logger.info('🔗 Registering legacy routes for backward compatibility...');
@@ -242,6 +245,7 @@ app.use('/api/images', imageRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/affiliates', affiliateRoutes);
 app.use('/api/admin/affiliates', adminAffiliateRoutes);
+app.use('/api/blog', blogRoutes);
 
 // Referral click tracking route
 app.get('/api/referral/:affiliateCode', trackReferralClick, (req, res) => {

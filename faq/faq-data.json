@@ -1,0 +1,131 @@
+[
+  {
+    "id": "what-is-publishjockey",
+    "category": "General",
+    "question": "What is PublishJockey?",
+    "answer": "PublishJockey is a professional publishing tool that transforms your manuscripts into publication-ready PDFs that meet industry standards. Unlike basic Word-to-PDF exports, PublishJockey applies professional design intelligence, perfect typography, and technical accuracy to create documents that look like they came from a professional publisher.",
+    "order": 1,
+    "featured": true
+  },
+  {
+    "id": "word-to-pdf-vs-publishjockey",
+    "category": "Product Comparison",
+    "question": "What's the difference between Word-to-PDF and PublishJockey?",
+    "answer": "The difference is substantial. Independent evaluations by Claude and ChatGPT scored PublishJockey at 96/100 (A+) versus Word-to-PDF at 66/100 (D). PublishJockey delivers:\n\n• Perfect table of contents with zero errors (vs Word's \"Error! Bookmark not defined\")\n• Professional book layout with balanced margins (vs Word's standard document look)\n• Publication-ready typography and font rendering (vs Word's generic, uneven spacing)\n• Proper metadata and accessibility tagging (vs Word's minimal structure)\n• Print-ready files that pass preflight checks (vs Word's files requiring major fixes)\n\nA Word-to-PDF says \"here's my document.\" A PublishJockey PDF says \"here's my book.\"",
+    "order": 2,
+    "featured": true
+  },
+  {
+    "id": "why-not-use-word",
+    "category": "Product Comparison",
+    "question": "Why can't I just use Microsoft Word to create my PDF?",
+    "answer": "Word is an incredible writing tool, but it's not a publishing tool. Word-to-PDF exports suffer from:\n\n1. Broken TOCs & Field Codes: The infamous \"Error! Bookmark not defined.\" ruins professional credibility\n2. No Publishing Logic: Word doesn't understand front matter, roman numerals, or design rhythm\n3. Rigid Layout Engine: Margins, text flow, and typography are mechanical, not artistic\n4. Lack of Metadata: Word exports don't optimize for searchability, accessibility, or navigation\n5. Time Lost in Post-Processing: Hours spent fixing issues that still look \"office-made,\" not \"publisher-made\"\n\nPublishJockey was built specifically for authors, educators, and professionals who want publication-quality results automatically.",
+    "order": 3,
+    "featured": true
+  },
+  {
+    "id": "independent-evaluations",
+    "category": "Quality & Validation",
+    "question": "What do independent evaluations say about PublishJockey?",
+    "answer": "We conducted two independent AI evaluations comparing PublishJockey with Word-to-PDF:\n\n**Claude's Evaluation:**\n• Visual Design & Layout: 96/100 (PJ) vs 68/100 (Word)\n• Typography & Font Rendering: 94/100 (PJ) vs 72/100 (Word)\n• Table of Contents: 98/100 (PJ) vs 45/100 (Word)\n• Professional Readiness: 97/100 (PJ) vs 62/100 (Word)\n• Overall: 96.3/100 (A+) vs 66.4/100 (D)\n\n**ChatGPT's Evaluation:**\n• Typography & Fonts: 92/100 (PJ) vs 75/100 (Word)\n• TOC Functionality: 90/100 (PJ) vs 60/100 (Word)\n• Accessibility & Structure: 90/100 (PJ) vs 65/100 (Word)\n• Professional Readability: 97/100 (PJ) vs 68/100 (Word)\n• Overall: 93/100 (A) vs 72/100 (C-)\n\nBoth evaluators concluded: PublishJockey produces near-publication-ready PDFs that meet industry standards.",
+    "order": 4,
+    "featured": true
+  },
+  {
+    "id": "what-publishjockey-gets-right",
+    "category": "Features",
+    "question": "What does PublishJockey do that other tools don't?",
+    "answer": "PublishJockey goes far beyond basic PDF conversion:\n\n**Professional Design Intelligence:**\n• Automatically applies roman numerals for front matter (ii, iii, iv…)\n• Balanced margins and page alignment\n• Consistent typography and line height\n\n**Technical Perfection:**\n• Zero broken bookmarks or rendering errors\n• Every TOC link, heading level, and page number works flawlessly\n\n**Built-In Metadata:**\n• Proper tagging for easy navigation on any device\n• Improved discoverability and accessibility\n\n**Print & eBook Ready:**\n• Files pass preflight checks for Amazon KDP, IngramSpark, and other platforms\n• Zero edits needed before upload\n\n**Typography That Breathes:**\n• Crisp, properly embedded fonts\n• Optimized for readability and professional appearance",
+    "order": 5,
+    "featured": false
+  },
+  {
+    "id": "who-is-publishjockey-for",
+    "category": "General",
+    "question": "Who is PublishJockey designed for?",
+    "answer": "PublishJockey is perfect for:\n\n• **Authors & Self-Publishers:** Create professional books without hiring a designer\n• **Coaches & Consultants:** Transform training materials into premium-looking guides\n• **Educators & Researchers:** Publish academic papers and course materials professionally\n• **Businesses:** Produce whitepapers, reports, and documentation that command respect\n• **Content Creators:** Anyone who wants their written work to look as professional as it sounds\n\nIf you're serious about how your work is perceived, PublishJockey bridges the gap between writing and publishing.",
+    "order": 6,
+    "featured": false
+  },
+  {
+    "id": "publishing-platforms",
+    "category": "Technical",
+    "question": "Will my PublishJockey PDFs work with Amazon KDP, IngramSpark, and other platforms?",
+    "answer": "Yes! PublishJockey PDFs are designed to pass preflight checks for all major publishing platforms including:\n\n• Amazon KDP (Kindle Direct Publishing)\n• IngramSpark\n• Draft2Digital\n• Lulu\n• Barnes & Noble Press\n• Apple Books\n\nOur files include proper metadata, embedded fonts, and correct structure that professional platforms require. You can upload directly without reformatting or fixing errors.",
+    "order": 7,
+    "featured": false
+  },
+  {
+    "id": "file-formats",
+    "category": "Technical",
+    "question": "What file formats does PublishJockey support?",
+    "answer": "PublishJockey accepts standard manuscript formats and outputs professional-grade PDFs optimized for both print and digital distribution. Our output files include:\n\n• High-quality PDF with embedded fonts\n• Proper bookmarks and navigation structure\n• Metadata for searchability\n• Both print-ready and screen-optimized versions\n\nYour files are ready for immediate distribution or platform upload.",
+    "order": 8,
+    "featured": false
+  },
+  {
+    "id": "pricing-plans",
+    "category": "Pricing",
+    "question": "What pricing plans are available?",
+    "answer": "PublishJockey offers flexible pricing to fit your publishing needs:\n\n**Standard Plans (Print Books):**\n• Single Book: Perfect for first-time authors\n• 5 Book Pack: For multiple titles or series\n• 10 Book Pack: For active authors\n• 20 Book Pack: For prolific writers\n• 50 Book Power Pack: For power users\n• 100 Book Agency Pack: For agencies and publishers\n\n**eBook Plans:**\n• Same structure as standard plans, optimized for digital formats\n\n**Full Service Plans:**\n• Full Service: Complete professional assistance\n• Full Service Plus: Premium hands-on support\n\n**Add-ons:**\n• Additional books as needed\n• Image purchase packs\n\nAll plans include professional formatting, zero broken TOCs, and publication-ready output. Check our pricing page for current rates and special offers.",
+    "order": 9,
+    "featured": false
+  },
+  {
+    "id": "how-long-does-it-take",
+    "category": "Process",
+    "question": "How long does it take to create a professional PDF?",
+    "answer": "PublishJockey processes your manuscript in minutes, not days. Our automated professional publishing engine:\n\n1. Analyzes your content structure\n2. Applies professional design rules\n3. Generates perfect table of contents\n4. Optimizes typography and layout\n5. Creates publication-ready PDF\n\nWhat would take hours of manual formatting in Word happens automatically, giving you more time to focus on writing and marketing your work.",
+    "order": 10,
+    "featured": false
+  },
+  {
+    "id": "do-i-need-design-experience",
+    "category": "Process",
+    "question": "Do I need design or technical experience to use PublishJockey?",
+    "answer": "Not at all! PublishJockey handles all the technical complexity for you. You don't need to know about:\n\n• Typography and font selection\n• Margin calculations and page layout\n• PDF metadata and structure\n• Bookmarks and navigation\n• Print specifications\n\nOur professional design intelligence applies best practices automatically. You focus on your content; we handle the professional presentation.",
+    "order": 11,
+    "featured": false
+  },
+  {
+    "id": "what-if-i-need-changes",
+    "category": "Process",
+    "question": "Can I make changes after generating my PDF?",
+    "answer": "Yes! You can update your content and regenerate your professional PDF as many times as needed within your plan limits. Each generation applies the same professional standards, ensuring consistency across all versions of your work.",
+    "order": 12,
+    "featured": false
+  },
+  {
+    "id": "broken-toc-word-problem",
+    "category": "Common Issues",
+    "question": "Why does Word create broken table of contents with 'Error! Bookmark not defined'?",
+    "answer": "This is one of the most common and frustrating issues with Word-to-PDF exports. It happens because:\n\n• Word uses field codes that break during PDF conversion\n• Bookmark references don't translate properly to PDF format\n• Manual TOC updates are required but often missed\n• Word's export process isn't designed for publishing\n\nPublishJockey eliminates this problem entirely. Our system generates perfect, error-free table of contents with working links every single time. This alone is worth switching from Word-to-PDF.",
+    "order": 13,
+    "featured": false
+  },
+  {
+    "id": "professional-vs-amateur-look",
+    "category": "Quality & Validation",
+    "question": "How can readers tell the difference between an amateur PDF and a professional one?",
+    "answer": "Readers may not consciously notice specific technical details, but they absolutely feel the difference:\n\n**Amateur PDFs (Word-to-PDF):**\n• Feel like office documents\n• Uneven spacing and margins\n• Generic, default fonts\n• Broken navigation links\n• Impression: \"work in progress\"\n\n**Professional PDFs (PublishJockey):**\n• Feel like published books\n• Balanced, breathing layout\n• Crisp, optimized typography\n• Perfect navigation structure\n• Impression: \"crafted, intentional, premium\"\n\nThe distinction is both technical and emotional. Professional presentation builds trust and perceived value.",
+    "order": 14,
+    "featured": false
+  },
+  {
+    "id": "support-and-help",
+    "category": "Support",
+    "question": "What kind of support is available?",
+    "answer": "We're here to help you succeed:\n\n• Email support for all users\n• Detailed documentation and guides\n• Video tutorials and best practices\n• Full Service plans include hands-on assistance\n• Community resources and tips\n\nOur goal is to make professional publishing accessible to everyone, regardless of technical experience.",
+    "order": 15,
+    "featured": false
+  },
+  {
+    "id": "money-back-guarantee",
+    "category": "Pricing",
+    "question": "Do you offer a money-back guarantee?",
+    "answer": "We stand behind the quality of PublishJockey. If you're not satisfied with the professional results, contact our support team. We're committed to ensuring your publishing success and will work with you to resolve any concerns.",
+    "order": 16,
+    "featured": false
+  }
+]
+

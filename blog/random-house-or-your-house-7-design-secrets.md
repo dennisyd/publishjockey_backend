@@ -1,4 +1,4 @@
-# Random House or Your House? The 7 Design Secrets That Separate Amateur from Professional Books
+# Random House or Your House? 7 Proven Book Design Secrets Every Indie Author Needs to Look Professional
 
 **How a $63 formatting tool gives indie authors Big Five quality without the $2,500 price tag**
 
@@ -146,8 +146,15 @@ Professional formatters design in **spreads** (two facing pages):
 - Consistent text block positioning
 - Balanced header/footer placement
 - Intentional chapter layouts
+- Genre-appropriate chapter styles and drop caps
 
-Word thinks in single pages, treating each independently. The result? Pages that technically work but don't feel cohesive.
+**Word gives you one generic look for everything.** Mystery thriller? Romance novel? Academic text? Technical manual? Word doesn't care—you get the same Times New Roman treatment.
+
+**Professional tools offer style variety.** PublishJockey.com includes 12 different chapter title styles (from "Thriller/Noir" with dramatic black backgrounds to "Romance/Soft Literary" with flowing italics) and 11 drop cap options (from traditional 3-line serif to illuminated manuscript with ornaments).
+
+Your mystery novel can look like a mystery novel. Your romance can look like a romance. Your academic text can look scholarly.
+
+Drop caps in Word? You'd need to manually create text boxes and hope they don't shift when you edit. PublishJockey.com? One click, perfect execution, 11 professional styles to choose from.
 
 ### **The Verdict:**
 🟢 **Professional / PublishJockey.com: 95-96/100**  
@@ -279,6 +286,20 @@ Asking Word to format your book is like asking a minivan to compete in Formula 1
 
 ---
 
+## The Genre Problem Word Can't Solve
+
+Here's something else: **different genres need different visual identities.**
+
+A thriller should feel dark and edgy. A romance should feel soft and flowing. An academic text should look scholarly. A technical manual should feel modern and precise.
+
+**Random House knows this.** That's why their mystery novels have different interior design than their romance novels. Different typography. Different chapter styles. Different visual personality.
+
+**Word doesn't care.** Romance, thriller, self-help, cookbook—Word gives them all the same generic treatment. There's no "thriller mode" or "romance mode." Just... Word mode.
+
+Professional formatting tools offer **genre-appropriate styling** that matches your book's personality to its content. Your mystery novel can actually *look* like a mystery novel.
+
+---
+
 ## The Modern Solution
 
 For decades, indie authors had two choices:
@@ -292,7 +313,7 @@ That's why I built **PublishJockey.com**—to give indie authors Random House qu
 ✅ Roman numerals (automatic)  
 ✅ Error-free Table of Contents (always)  
 ✅ Professional typography (built-in)  
-✅ Elegant page layouts (pre-designed)  
+✅ 12 chapter title styles + 11 drop cap options (genre-specific)  
 ✅ Proper technical execution (optimized PDFs)  
 ✅ One-click updates  
 ✅ Print and e-book formats  
@@ -353,4 +374,3 @@ Because your story deserves to look as good as it reads.
 Dr. Yancy Dennis is the creator of PublishJockey.com, a design-driven publishing platform helping indie authors achieve Big Five quality without Big Five budgets. After spending two years writing a book only to realize Word-to-PDF made it look amateur, he built the tool he wished existed.
 
 *Questions? Email support@publishjockey.com or visit [PublishJockey.com/faq](https://publishjockey.com/faq)*
-

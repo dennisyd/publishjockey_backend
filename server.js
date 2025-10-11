@@ -49,7 +49,7 @@ app.use((req, res, next) => {
   return express.json({ limit: '50mb' })(req, res, next);
 });
 
-// Basic middleware
+// Basic middleware - permissive CORS for all Vercel deployments
 const allowedOrigins = [
   'https://publishjockey-frontend.vercel.app',
   'https://publishjockey.com',
@@ -57,8 +57,26 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3001'
 ];
-app.use(cors({
-  origin: allowedOrigins,
+
+// Dynamic CORS configuration to allow all Vercel preview deployments
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Allow all vercel.app domains (preview deployments)
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    // Reject other origins
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
@@ -72,7 +90,9 @@ app.use(cors({
     'Pragma',
     'Expires'
   ]
-}));
+};
+
+app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 

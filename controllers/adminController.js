@@ -627,7 +627,9 @@ const deleteUser = async (req, res) => {
          const user = await User.findById(userId);
          if (user) {
            user.booksRemaining = user.booksAllowed;
-           await user.save();
+           // Skip validation since we're about to delete the user anyway
+           // This prevents errors from invalid/legacy subscription values
+           await user.save({ validateBeforeSave: false });
            console.log(`Reset books remaining for user ${userId} to full allowance: ${user.booksRemaining}/${user.booksAllowed}`);
          }
        } catch (userUpdateError) {

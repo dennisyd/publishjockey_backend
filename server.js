@@ -75,6 +75,16 @@ const corsOptions = {
       return callback(null, true);
     }
     
+    // Allow both www and non-www versions of publishjockey.com
+    if (origin === 'https://publishjockey.com' || origin === 'https://www.publishjockey.com') {
+      return callback(null, true);
+    }
+    
+    // Allow any subdomain of publishjockey.com (for testing/staging)
+    if (origin.match(/^https?:\/\/([a-z0-9-]+\.)?publishjockey\.com$/i)) {
+      return callback(null, true);
+    }
+    
     // Reject other origins
     callback(new Error('Not allowed by CORS'));
   },

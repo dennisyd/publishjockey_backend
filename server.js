@@ -53,6 +53,7 @@ app.use((req, res, next) => {
 const allowedOrigins = [
   'https://publishjockey-frontend.vercel.app',
   'https://publishjockey.com',
+  'https://www.publishjockey.com',
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:3001'

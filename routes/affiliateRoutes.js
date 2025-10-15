@@ -17,8 +17,18 @@ router.post('/register', async (req, res) => {
   try {
     const { paypalEmail, companyName, website, marketingDescription } = req.body;
     
+    // Get userId from token (can be either req.user.userId or req.user.id depending on middleware)
+    const userId = req.user.userId || req.user.id;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'User authentication failed' 
+      });
+    }
+    
     // Check if user is already an affiliate
-    const existingAffiliate = await Affiliate.findOne({ userId: req.user.id });
+    const existingAffiliate = await Affiliate.findOne({ userId });
     if (existingAffiliate) {
       return res.status(400).json({ 
         success: false, 
@@ -39,7 +49,7 @@ router.post('/register', async (req, res) => {
     
     // Create affiliate record
     const affiliate = new Affiliate({
-      userId: req.user.id,
+      userId,
       affiliateCode,
       payoutInfo: {
         paypalEmail,

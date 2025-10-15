@@ -98,7 +98,7 @@ router.get('/stats', async (req, res) => {
  * GET /admin/affiliates
  * Get all affiliates with detailed information
  */
-router.get('/affiliates', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 50, status } = req.query;
     
@@ -230,7 +230,7 @@ router.get('/revenue', async (req, res) => {
  * PUT /admin/affiliates/:id/status
  * Update affiliate status
  */
-router.put('/affiliates/:id/status', async (req, res) => {
+router.put('/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -263,7 +263,7 @@ router.put('/affiliates/:id/status', async (req, res) => {
  * POST /admin/affiliates/:id/process-payout
  * Process payout for a specific affiliate
  */
-router.post('/affiliates/:id/process-payout', async (req, res) => {
+router.post('/:id/process-payout', async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -365,7 +365,7 @@ router.post('/process-monthly-payouts', async (req, res) => {
  * GET /admin/affiliates/:id/details
  * Get detailed information for a specific affiliate
  */
-router.get('/affiliates/:id/details', async (req, res) => {
+router.get('/:id/details', async (req, res) => {
   try {
     const { id } = req.params;
     

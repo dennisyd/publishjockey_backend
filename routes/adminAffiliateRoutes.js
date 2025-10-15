@@ -245,7 +245,7 @@ router.put('/:id/status', async (req, res) => {
       id,
       { 
         status,
-        ...(status === 'active' && { approvedAt: new Date(), approvedBy: req.user._id })
+        ...(status === 'active' && { approvedAt: new Date(), approvedBy: req.user.userId || req.user.id })
       },
       { new: true }
     );

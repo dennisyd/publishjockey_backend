@@ -51,6 +51,20 @@ const AffiliateSchema = new mongoose.Schema({
     ref: 'User'
   },
   
+  // Application information
+  companyName: {
+    type: String,
+    trim: true
+  },
+  website: {
+    type: String,
+    trim: true
+  },
+  marketingDescription: {
+    type: String,
+    trim: true
+  },
+  
   // Contact information for payouts
   payoutInfo: {
     paypalEmail: {

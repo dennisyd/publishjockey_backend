@@ -15,7 +15,7 @@ router.use(verifyToken);
 // @access  Private
 router.post('/register', async (req, res) => {
   try {
-    const { paypalEmail, bankInfo } = req.body;
+    const { paypalEmail, companyName, website, marketingDescription } = req.body;
     
     // Check if user is already an affiliate
     const existingAffiliate = await Affiliate.findOne({ userId: req.user.id });
@@ -43,10 +43,11 @@ router.post('/register', async (req, res) => {
       affiliateCode,
       payoutInfo: {
         paypalEmail,
-        bankInfo,
-        stripeConnect,
-        preferredPaymentMethod
+        preferredPaymentMethod: 'paypal'
       },
+      companyName,
+      website,
+      marketingDescription,
       agreementAccepted: true,
       agreementAcceptedAt: new Date()
     });

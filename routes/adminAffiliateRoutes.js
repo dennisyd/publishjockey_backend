@@ -109,26 +109,28 @@ router.get('/', async (req, res) => {
     
     const affiliates = await Affiliate.find(query)
       .populate('userId', 'email firstName lastName')
-      .populate({
-        path: 'commissions',
-        match: { status: 'approved' },
-        select: 'amount processingFees'
-      })
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
     
-    // Calculate expected payout for each affiliate
-    const affiliatesWithPayouts = affiliates.map(affiliate => {
-      const expectedPayout = affiliate.commissions.reduce((total, commission) => {
-        return total + (commission.amount - (commission.processingFees || 0));
-      }, 0);
-      
-      return {
-        ...affiliate.toObject(),
-        expectedPayout
-      };
-    });
+    // Calculate expected payout for each affiliate by fetching their commissions
+    const affiliatesWithPayouts = await Promise.all(
+      affiliates.map(async (affiliate) => {
+        const approvedCommissions = await Commission.find({
+          affiliateId: affiliate._id,
+          status: 'approved'
+        });
+        
+        const expectedPayout = approvedCommissions.reduce((total, commission) => {
+          return total + (commission.amount - (commission.processingFees || 0));
+        }, 0);
+        
+        return {
+          ...affiliate.toObject(),
+          expectedPayout
+        };
+      })
+    );
     
     const total = await Affiliate.countDocuments(query);
     

@@ -42,13 +42,6 @@ const transporter = createTransporter();
  * @param {Object} options - Options containing name, email, and verificationToken
  */
 const sendVerificationEmail = async ({ name, email, verificationToken }) => {
-  // Check if email configuration is available
-  if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
-    console.log(`Email configuration missing. Verification email not sent to ${email}`);
-    console.log(`Verification URL would be: ${config.frontendUrl}/verify-email?token=${verificationToken}`);
-    throw new Error('Email service not configured');
-  }
-
   const verificationUrl = `${config.frontendUrl}/verify-email?token=${verificationToken}`;
   
   const mailOptions = {
@@ -115,12 +108,6 @@ The PublishJockey Team
  * @param {Object} options - Options containing name, email, and resetToken
  */
 const sendPasswordResetEmail = async ({ name, email, resetToken }) => {
-  // Check if email configuration is available
-  if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
-    console.log(`Email configuration missing. Password reset email not sent to ${email}`);
-    throw new Error('Email service not configured');
-  }
-
   const resetUrl = `${config.frontendUrl}/reset-password?token=${resetToken}`;
   
   const mailOptions = {
@@ -165,12 +152,6 @@ const sendPasswordResetEmail = async ({ name, email, resetToken }) => {
  * @param {Object} options - Options containing name, email, and changeDetails
  */
 const sendPasswordChangeEmail = async ({ name, email, changeDetails = {} }) => {
-  // Check if email configuration is available
-  if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
-    console.log(`Email configuration missing. Password change confirmation email not sent to ${email}`);
-    throw new Error('Email service not configured');
-  }
-
   const { timestamp = new Date(), ipAddress, userAgent } = changeDetails;
   const formattedTime = new Date(timestamp).toLocaleString();
   
@@ -224,12 +205,6 @@ const sendPasswordChangeEmail = async ({ name, email, changeDetails = {} }) => {
  * @param {Object} options - Options containing name, email, subject and message
  */
 const sendNotificationEmail = async ({ name, email, subject, message }) => {
-  // Check if email configuration is available
-  if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
-    console.log(`Email configuration missing. Notification email not sent to ${email}`);
-    throw new Error('Email service not configured');
-  }
-  
   const mailOptions = {
     from: `"PublishJockey" <${config.email.auth.user}>`,
     to: email,

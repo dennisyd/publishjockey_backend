@@ -36,30 +36,16 @@ const register = async (req, res) => {
     });
     
     // Send verification email
-    try {
-      await sendVerificationEmail({
-        name: user.name,
-        email: user.email,
-        verificationToken
-      });
-
-      res.status(201).json({
-        success: true,
-        message: 'User registered successfully. You can now log in!'
-      });
-    } catch (emailError) {
-      console.error('Email sending failed:', emailError);
-
-      // In production, don't fail registration if email fails
-      // Just log the error and continue with successful registration
-      console.warn('Registration completed but verification email failed to send for:', user.email);
-
-      res.status(201).json({
-        success: true,
-        message: 'User registered successfully. You can now log in!',
-        warning: 'Email verification is temporarily disabled. You can log in immediately.'
-      });
-    }
+    await sendVerificationEmail({
+      name: user.name,
+      email: user.email,
+      verificationToken
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: 'Registration successful! Please check your email to verify your account.'
+    });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ 
@@ -164,18 +150,12 @@ const login = async (req, res) => {
     });
     
     // Check if email is verified
-    // TEMPORARILY DISABLED: Allow all users to login without email verification while fixing email service
     if (!user.isVerified) {
       console.log('User not verified:', email);
-      console.log('AUTO-VERIFYING: Email verification temporarily disabled while fixing email service');
-      
-      // Auto-verify the user
-      user.isVerified = true;
-      user.verificationToken = undefined;
-      user.verificationTokenExpires = undefined;
-      await user.save();
-      
-      console.log('User auto-verified successfully');
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Please verify your email before logging in. Check your inbox for the verification link.' 
+      });
     }
     
     // Compare password

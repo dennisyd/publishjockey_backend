@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, verifyEmail, forgotPassword, resetPassword, refreshToken, getMe } = require('../controllers/authController');
+const { register, login, verifyEmail, forgotPassword, resetPassword, refreshToken, getMe, adminVerifyUser } = require('../controllers/authController');
 const { verifyTokenStrict } = require('../middleware/auth');
 const { validateUserRegistration, validateUserLogin } = require('../middleware/validation');
 
@@ -18,5 +18,8 @@ router.get('/me', verifyTokenStrict, getMe);
 
 // Refresh token route (no auth required - uses refresh token)
 router.post('/refresh', refreshToken);
+
+// Emergency admin route to verify user (remove in production)
+router.post('/admin/verify-user', adminVerifyUser);
 
 module.exports = router; 

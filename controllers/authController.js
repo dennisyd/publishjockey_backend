@@ -45,7 +45,7 @@ const register = async (req, res) => {
 
       res.status(201).json({
         success: true,
-        message: 'User registered successfully. Please check your email for verification.'
+        message: 'User registered successfully. You can now log in!'
       });
     } catch (emailError) {
       console.error('Email sending failed:', emailError);
@@ -56,8 +56,8 @@ const register = async (req, res) => {
 
       res.status(201).json({
         success: true,
-        message: 'User registered successfully. Email verification will be sent shortly.',
-        warning: 'Verification email may be delayed due to service issues.'
+        message: 'User registered successfully. You can now log in!',
+        warning: 'Email verification is temporarily disabled. You can log in immediately.'
       });
     }
   } catch (error) {
@@ -164,12 +164,18 @@ const login = async (req, res) => {
     });
     
     // Check if email is verified
+    // TEMPORARILY DISABLED: Allow all users to login without email verification while fixing email service
     if (!user.isVerified) {
       console.log('User not verified:', email);
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Please verify your email before logging in' 
-      });
+      console.log('AUTO-VERIFYING: Email verification temporarily disabled while fixing email service');
+      
+      // Auto-verify the user
+      user.isVerified = true;
+      user.verificationToken = undefined;
+      user.verificationTokenExpires = undefined;
+      await user.save();
+      
+      console.log('User auto-verified successfully');
     }
     
     // Compare password
@@ -460,6 +466,56 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// Admin route to manually verify user (for emergency use)
+const adminVerifyUser = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    const User = require('../models/User');
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(200).json({
+        success: true,
+        message: 'User is already verified'
+      });
+    }
+
+    // Verify the user
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpires = undefined;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'User verified successfully'
+    });
+
+  } catch (error) {
+    console.error('Admin verify user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify user',
+      error: error.message
+    });
+  }
+};
+
 // Get current user
 const getCurrentUser = async (req, res) => {
   try {
@@ -626,5 +682,6 @@ module.exports = {
   refreshToken,
   getCurrentUser,
   getMe: getCurrentUser, // Alias for getMe
-  updateProfile
+  updateProfile,
+  adminVerifyUser
 }; 

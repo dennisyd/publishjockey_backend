@@ -9,9 +9,10 @@ const createTransporter = () => {
     return null;
   }
 
-  // Production email configuration validation
+  // Production email configuration validation - log warning instead of throwing
   if (config.nodeEnv === 'production' && (!config.email.host || !config.email.auth.user || !config.email.auth.pass)) {
-    throw new Error('Email configuration is required in production. Please set EMAIL_HOST, EMAIL_USER, and EMAIL_PASS environment variables.');
+    console.warn('WARNING: Email configuration is missing in production. Email functionality will be disabled.');
+    console.warn('Please set EMAIL_HOST, EMAIL_USER, and EMAIL_PASS environment variables to enable email sending.');
   }
 
   return nodemailer.createTransport({
@@ -43,9 +44,9 @@ const transporter = createTransporter();
 const sendVerificationEmail = async ({ name, email, verificationToken }) => {
   // Check if email configuration is available
   if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
-    console.log(`[DEV] No email configuration found. Verification email would be sent to ${email} with token: ${verificationToken}`);
-    console.log(`[DEV] Verification URL: ${config.frontendUrl}/verify-email?token=${verificationToken}`);
-    return;
+    console.log(`Email configuration missing. Verification email not sent to ${email}`);
+    console.log(`Verification URL would be: ${config.frontendUrl}/verify-email?token=${verificationToken}`);
+    throw new Error('Email service not configured');
   }
 
   const verificationUrl = `${config.frontendUrl}/verify-email?token=${verificationToken}`;
@@ -116,8 +117,8 @@ The PublishJockey Team
 const sendPasswordResetEmail = async ({ name, email, resetToken }) => {
   // Check if email configuration is available
   if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
-    console.log(`[DEV] No email configuration found. Password reset email would be sent to ${email} with token: ${resetToken}`);
-    return;
+    console.log(`Email configuration missing. Password reset email not sent to ${email}`);
+    throw new Error('Email service not configured');
   }
 
   const resetUrl = `${config.frontendUrl}/reset-password?token=${resetToken}`;
@@ -166,9 +167,8 @@ const sendPasswordResetEmail = async ({ name, email, resetToken }) => {
 const sendPasswordChangeEmail = async ({ name, email, changeDetails = {} }) => {
   // Check if email configuration is available
   if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
-    console.log(`[DEV] No email configuration found. Password change confirmation email would be sent to ${email}`);
-    console.log(`[DEV] Change details:`, changeDetails);
-    return;
+    console.log(`Email configuration missing. Password change confirmation email not sent to ${email}`);
+    throw new Error('Email service not configured');
   }
 
   const { timestamp = new Date(), ipAddress, userAgent } = changeDetails;
@@ -226,8 +226,8 @@ const sendPasswordChangeEmail = async ({ name, email, changeDetails = {} }) => {
 const sendNotificationEmail = async ({ name, email, subject, message }) => {
   // Check if email configuration is available
   if (!config.email.host || !config.email.auth.user || !config.email.auth.pass) {
-    console.log(`[DEV] No email configuration found. Notification email would be sent to ${email} with subject: ${subject}`);
-    return;
+    console.log(`Email configuration missing. Notification email not sent to ${email}`);
+    throw new Error('Email service not configured');
   }
   
   const mailOptions = {

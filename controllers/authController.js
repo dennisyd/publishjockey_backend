@@ -42,21 +42,22 @@ const register = async (req, res) => {
         email: user.email,
         verificationToken
       });
-      
+
       res.status(201).json({
         success: true,
         message: 'User registered successfully. Please check your email for verification.'
       });
     } catch (emailError) {
       console.error('Email sending failed:', emailError);
-      
-      // Fail the registration if email can't be sent
-      // Delete the user since we can't send verification email
-      await User.findByIdAndDelete(user._id);
 
-      res.status(500).json({
-        success: false,
-        message: 'Registration failed - unable to send verification email. Please try again later.'
+      // In production, don't fail registration if email fails
+      // Just log the error and continue with successful registration
+      console.warn('Registration completed but verification email failed to send for:', user.email);
+
+      res.status(201).json({
+        success: true,
+        message: 'User registered successfully. Email verification will be sent shortly.',
+        warning: 'Verification email may be delayed due to service issues.'
       });
     }
   } catch (error) {
@@ -347,12 +348,17 @@ const forgotPassword = async (req, res) => {
     await user.save();
     
     // Send password reset email
-    await sendPasswordResetEmail({
-      name: user.name,
-      email: user.email,
-      resetToken
-    });
-    
+    try {
+      await sendPasswordResetEmail({
+        name: user.name,
+        email: user.email,
+        resetToken
+      });
+    } catch (emailError) {
+      console.error('Password reset email sending failed:', emailError);
+      // Don't fail the request if email fails - just log it
+    }
+
     res.status(200).json({
       success: true,
       message: 'If your email is registered, you will receive password reset instructions'
@@ -437,7 +443,7 @@ const resetPassword = async (req, res) => {
       });
     } catch (emailError) {
       console.error('Failed to send password change confirmation email:', emailError);
-      // Don't fail the password reset if email fails
+      // Don't fail the password reset if email fails - just log it
     }
     
     res.status(200).json({

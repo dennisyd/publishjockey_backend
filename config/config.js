@@ -61,10 +61,10 @@ const requiredEnvVars = [
   'MONGODB_URI'
 ];
 
-// In production, also require email configuration
-if (config.nodeEnv === 'production') {
-  requiredEnvVars.push('EMAIL_HOST', 'EMAIL_USER', 'EMAIL_PASS');
-}
+// In production, email configuration is optional (will log warning if missing)
+// if (config.nodeEnv === 'production') {
+//   requiredEnvVars.push('EMAIL_HOST', 'EMAIL_USER', 'EMAIL_PASS');
+// }
 
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 

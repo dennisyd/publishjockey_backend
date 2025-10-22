@@ -10,6 +10,11 @@ const path = require('path');
  */
 router.get('/', async (req, res) => {
   try {
+    // Check if response has already been sent (e.g., by rate limiting)
+    if (res.headersSent) {
+      return;
+    }
+    
     const indexPath = path.join(__dirname, '../blog/index.json');
     const indexData = await fs.readFile(indexPath, 'utf-8');
     const posts = JSON.parse(indexData);
@@ -24,10 +29,14 @@ router.get('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching blog index:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch blog posts'
-    });
+    
+    // Check if response has already been sent before sending error
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch blog posts'
+      });
+    }
   }
 });
 
@@ -38,6 +47,11 @@ router.get('/', async (req, res) => {
  */
 router.get('/featured', async (req, res) => {
   try {
+    // Check if response has already been sent
+    if (res.headersSent) {
+      return;
+    }
+    
     const indexPath = path.join(__dirname, '../blog/index.json');
     const indexData = await fs.readFile(indexPath, 'utf-8');
     const posts = JSON.parse(indexData);
@@ -54,10 +68,14 @@ router.get('/featured', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching featured posts:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch featured posts'
-    });
+    
+    // Check if response has already been sent before sending error
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch featured posts'
+      });
+    }
   }
 });
 
@@ -68,6 +86,11 @@ router.get('/featured', async (req, res) => {
  */
 router.get('/:slug', async (req, res) => {
   try {
+    // Check if response has already been sent
+    if (res.headersSent) {
+      return;
+    }
+    
     const { slug } = req.params;
     
     // Get metadata from index
@@ -97,17 +120,20 @@ router.get('/:slug', async (req, res) => {
   } catch (error) {
     console.error('Error fetching blog post:', error);
     
-    if (error.code === 'ENOENT') {
-      return res.status(404).json({
+    // Check if response has already been sent before sending error
+    if (!res.headersSent) {
+      if (error.code === 'ENOENT') {
+        return res.status(404).json({
+          success: false,
+          message: 'Blog post not found'
+        });
+      }
+      
+      res.status(500).json({
         success: false,
-        message: 'Blog post not found'
+        message: 'Failed to fetch blog post'
       });
     }
-    
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch blog post'
-    });
   }
 });
 
@@ -118,6 +144,11 @@ router.get('/:slug', async (req, res) => {
  */
 router.get('/category/:category', async (req, res) => {
   try {
+    // Check if response has already been sent
+    if (res.headersSent) {
+      return;
+    }
+    
     const { category } = req.params;
     
     const indexPath = path.join(__dirname, '../blog/index.json');
@@ -137,10 +168,14 @@ router.get('/category/:category', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching posts by category:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch posts by category'
-    });
+    
+    // Check if response has already been sent before sending error
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch posts by category'
+      });
+    }
   }
 });
 
@@ -151,6 +186,11 @@ router.get('/category/:category', async (req, res) => {
  */
 router.get('/tag/:tag', async (req, res) => {
   try {
+    // Check if response has already been sent
+    if (res.headersSent) {
+      return;
+    }
+    
     const { tag } = req.params;
     
     const indexPath = path.join(__dirname, '../blog/index.json');
@@ -172,10 +212,14 @@ router.get('/tag/:tag', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching posts by tag:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch posts by tag'
-    });
+    
+    // Check if response has already been sent before sending error
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch posts by tag'
+      });
+    }
   }
 });
 
